@@ -1,97 +1,163 @@
 import QueryString from "qs";
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../global/error";
-import { IUser } from "../../../data/entities/user";
-import { AuthTypes, OAuthProviders } from "../../../data/enums/auth";
+import { OAuthProviders } from "../../../data/enums/auth";
+import { GoogleAuthSchema, TGoogleAuthConfig } from "../../../config/google";
+import { CreateUserDTO } from "../../../data/dto/user";
+import { validateData } from "../../../utils/functions";
+import { EStatusCodes } from "../../../global/enums";
 
-export class GoogleAuth {
-  constructor(
-    private readonly options: {
-      clientId: string;
-      clientSecret: string;
-      redirectUri: string;
-      accessType?: string;
-      responseType: string;
-      prompt: string;
-      scope: string[];
-      codeAccessUrl: string;
-      tokenAccessUrl: string;
-      profileAccessUrl: string;
-      grantType: string;
-    }
-  ) {}
-  async authRequest(res: Response) {
-    try {
-      const options = QueryString.stringify({
-        client_id: this.options.clientId,
-        redirect_uri: this.options.redirectUri,
-        access_type: this.options.accessType,
-        response_type: this.options.responseType,
-        prompt: this.options.prompt,
-        scope: this.options.scope.join(" "),
+interface GoogleProfile {
+  id: string;
+  email: string;
+  name: string;
+  picture: string;
+}
+
+interface GoogleTokens {
+  access_token: string;
+  token_type: string;
+  id_token: string;
+}
+
+export class GoogleAuthControllers {
+  private readonly config: Readonly<TGoogleAuthConfig>;
+
+  constructor(googleAuthConfig: TGoogleAuthConfig) {
+    const validation = validateData(googleAuthConfig, GoogleAuthSchema);
+    if (!validation.success) {
+      throw new AppError({
+        message: "Invalid Google auth Configuration",
+        statusCode: EStatusCodes.enum.badRequest,
+        details: validation.error
       });
-      const url = `${this.options.codeAccessUrl}?${options}`;
-      res.redirect(url);
+    }
+    this.config = Object.freeze({ ...googleAuthConfig });
+    this.authRequest = this.authRequest.bind(this);
+    this.getGoogleTokens = this.getGoogleTokens.bind(this);
+    this.getUserProfile = this.getUserProfile.bind(this);
+  }
+
+  private createAuthOptions(): string {
+    return QueryString.stringify({
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      access_type: this.config.accessType,
+      response_type: this.config.responseType,
+      prompt: this.config.prompt,
+      scope: this.config.scope.join(" "),
+    });
+  }
+
+  private async fetchWithErrorHandling<T>(
+    url: string,
+    options: RequestInit = {},
+    errorMessage: string
+  ): Promise<T> {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      throw new AppError({
+        message: errorMessage,
+        type: "Auth Error",
+        details: `HTTP Status: ${response.status}`,
+        statusCode: response.status
+      });
+    }
+
+    return response.json();
+  }
+
+  async authRequest(_: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const options = this.createAuthOptions();
+      const authUrl = `${this.config.codeAccessUrl}?${options}`;
+      res.redirect(authUrl);
     } catch (error) {
-      console.log(error);
-      throw error;
+      next(new AppError({
+        message: "Failed to create Google Auth request URL",
+        type: "Auth Error",
+        details: error,
+        statusCode: EStatusCodes.enum.internalServerError
+      }));
     }
   }
-  async getTokens(req: Request, res: Response, next: NextFunction) {
+
+  async getGoogleTokens(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const query = QueryString.stringify({
-        code: req.query.code,
-        client_id: this.options.clientId,
-        client_secret: this.options.clientSecret,
-        redirect_uri: this.options.redirectUri,
-        grant_type: this.options.grantType,
-      });
-      if (!req.query.code)
+      const code = req.query.code as string | undefined;
+
+      if (!code) {
         throw new AppError({
-          message: "Invalid Google Code",
+          message: "Invalid Google Authorization Code",
           type: "Auth Error",
+          statusCode: EStatusCodes.enum.badRequest
         });
-      const url = `${this.options.tokenAccessUrl}?${query}`;
+      }
 
-      const response = await fetch(url, {
-        method: "POST",
+      const query = QueryString.stringify({
+        code,
+        client_id: this.config.clientId,
+        client_secret: this.config.clientSecret,
+        redirect_uri: this.config.redirectUri,
+        grant_type: this.config.grantType,
       });
 
-      const data = await response.json();
-      req.body = data;
+      const url = `${this.config.tokenAccessUrl}?${query}`;
+      const tokens = await this.fetchWithErrorHandling<GoogleTokens>(
+        url,
+        { method: "POST" },
+        "Failed to fetch Google tokens"
+      );
+
+      req.body = tokens;
       next();
     } catch (error) {
-      console.log(error);
       next(error);
     }
   }
-  async getUserProfile(req: Request, res: Response, next: NextFunction) {
+
+  async getUserProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { access_token, refresh_token, expires_in, id_token, token_type } =
-        req.body;
-      const response = await fetch(
-        `${this.options.profileAccessUrl}?alt=json&access_token=${access_token}`,
+      const tokens = req.body as Partial<GoogleTokens>;
+      const { access_token, token_type, id_token } = tokens;
+
+      if (!access_token || !token_type || !id_token) {
+        throw new AppError({
+          message: "Missing token details in request body",
+          type: "Auth Error",
+          statusCode: EStatusCodes.enum.badRequest
+        });
+      }
+
+      const url = `${this.config.profileAccessUrl}?alt=json&access_token=${access_token}`;
+      const profile = await this.fetchWithErrorHandling<GoogleProfile>(
+        url,
         {
           headers: {
             Authorization: `${token_type} ${id_token}`,
           },
-        }
+        },
+        "Failed to fetch Google user profile"
       );
-      const profile = await response.json();
-      const userData: IUser = {
-        name: profile.name,
+
+      const userData: CreateUserDTO = {
+        firstName: profile.name,
         email: profile.email,
-        authType: AuthTypes.OAuth,
-        avatar: profile.picture,
-        oAuthId: profile.id,
-        oAuthProvider: OAuthProviders.Google,
-        userName: profile.name,
-        verified: profile?.verified,
+        profilePictureUrl: {
+          external: true,
+          url: profile.picture,
+        },
+        externalProvider: OAuthProviders.Google,
+        oauth: {
+          oauthId: profile.id,
+          provider: OAuthProviders.Google,
+        },
       };
+
       req.body = userData;
       next();
     } catch (error) {
-      console.log(error);
       next(error);
     }
   }

@@ -1,188 +1,216 @@
-import { CookieOptions, NextFunction, Request, Response } from "express";
-import { UserRepositoryImpl } from "../../../data/orm/repository/UserRepositoryImpl";
-import { Auth } from "../../../domain/useCases/Auth";
-import { env } from "../../../config/env";
-import { StatusCodes } from "../../../global/enums";
+import { Response, Request, NextFunction, CookieOptions } from "express";
+import { GoogleAuthConfig } from "../../../config/google";
+import { AuthUseCase } from "../../../domain/auth/useCases/AuthUseCase";
+import { GoogleAuthControllers } from "./GoogleAuth";
+import { CreateUserSchema, SignInDTO, SignInSchema, SocialSignInDTO, SocialSignInSchema } from "../../../data/dto/user";
+import { validateData } from "../../../utils/functions";
+import { EStatusCodes } from "../../../global/enums";
+import { IResponseData } from "../../../global/entities";
+import { TUser } from "../../../data/entities/user";
+import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
-import { GoogleAuth } from "./GoogleAuth";
-import { AppError } from "../../../global/error";
-import { IUser } from "../../../data/entities/user";
-
+import { CreateUserUseCase } from "../../../domain/users/useCases/CreateUser";
 export class AuthControllers {
-  private readonly authUseCase: Auth;
-  public readonly googleAuth: GoogleAuth;
-  constructor(private readonly userRepository: UserRepositoryImpl) {
-    this.authUseCase = new Auth(userRepository);
-    this.googleAuth = new GoogleAuth({
-      clientId: env.google_client_id,
-      clientSecret: env.google_client_secret,
-      redirectUri: env.google_callback_url,
-      accessType: "offline",
-      responseType: "code",
-      prompt: "consent",
-      scope: [
-        "https://www.googleapis.com/auth/userinfo.profile",
-        "https://www.googleapis.com/auth/userinfo.email",
-      ],
-      codeAccessUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-      tokenAccessUrl: "https://oauth2.googleapis.com/token",
-      profileAccessUrl: "https://www.googleapis.com/oauth2/v1/userinfo",
-      grantType: "authorization_code",
-    });
-  }
-  async register(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { email, name, password } = req.body;
-      //FIXME Validation
-      if (
-        [
-          !email,
-          !email.includes("@"),
-          !name,
-          !password,
-          !(password?.length >= 6),
-        ].includes(true)
-      )
-        throw Error("Invalid Data");
+  public googleAuthControllers = new GoogleAuthControllers(GoogleAuthConfig)
+  constructor(
+    private readonly authUseCase: AuthUseCase
+  ) { }
 
-      const login = await this.authUseCase.register({
-        email,
-        name,
-        password,
-      });
-      if (!login) throw Error("Error registering User");
-
-      this.setCookies(res, {
-        accessToken: login.accessToken!,
-        refreshToken: login.refreshToken!,
-      })
-        .status(StatusCodes.created)
-        .redirect("/");
-      // .json(login);
-    } catch (error: any) {
-      next(
-        new AppError({
-          ...(error?.error ?? {}),
-          message: error?.message,
-          status: error?.error?.status ?? 400,
-          path: req.baseUrl,
-          url: req.originalUrl,
-          type: "Register user",
-        })
-      );
-    }
-  }
-  async login(req: Request, res: Response) {
+  async signUp(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const { email, password } = req.body;
-      if (!email || !password) throw Error("Invalid Email or Password");
-      const login = await this.authUseCase.login({
-        email,
-        password,
-      });
-      if (!login) throw Error("Invalid Email or Password");
-      this.setCookies(res, {
-        accessToken: login.accessToken!,
-        refreshToken: login.refreshToken!,
-      })
-        .status(StatusCodes.ok)
-        .json(login);
-    } catch (error) {
-      throw error;
-    }
-  }
-  async socialLogin(req: Request, res: Response) {
-    try {
-      //FIXME
-      const user = req.body;
-      if (!user?.name || !user?.email) throw Error("Invalid User");
-      const login = await this.authUseCase.socialLogin(
-        user,
-        user?.oAuthProvider,
-        user?.oAuthId
-      );
-
-      if (!login) throw Error("Login Failed");
-      this.setCookies(res, {
-        accessToken: login.accessToken!,
-        refreshToken: login.refreshToken!,
-      })
-        .status(StatusCodes.ok)
-        .redirect("/api/v1/users");
-    } catch (error) {
-      throw error;
-    }
-  }
-  async logout(req: Request, res: Response) {
-    try {
-      const user = await this.verifyToken(req);
-      if (user) {
-        await this.authUseCase.logout(user.id!);
+      const validation = validateData<TUser>(req.body, CreateUserSchema);
+      if (!validation.success) {
+        res.status(EStatusCodes.enum.badRequest).json({
+          error: validation.error,
+          message: "Validation failed",
+          status: EStatusCodes.enum.badRequest,
+          description: "Invalid input data for creating a new user",
+          url: req.url,
+          path: req.path,
+        });
+        return
       }
-      this.clearCookies(res).redirect("/");
+
+      const result = await this.authUseCase.signUp(validation.data);
+
+      if (!result.success) {
+        res.status(EStatusCodes.enum.conflict).json({
+          error: result.error,
+          message: "User creation conflict",
+          status: EStatusCodes.enum.conflict,
+          description: "Email already in use or other conflict occurred",
+          url: req.url,
+          path: req.path,
+        });
+        return
+      }
+      const responseData: IResponseData<TUser> = {
+        ...result,
+        message: "New User Created",
+        status: EStatusCodes.enum.created,
+        description: "New user successfully created with email and password",
+        url: req.url,
+        path: req.path,
+        documentsModified: 1,
+        type: "Create User",
+      };
+
+      res.status(responseData.status).json(responseData);
     } catch (error) {
-      this.clearCookies(res).redirect("/");
+      next(error);
     }
   }
-  async verifyToken(req: Request): Promise<IUser | null> {
+  async signIn(req: Request, res: Response, next: NextFunction) {
     try {
-      const token = this.getToken(req, "refresh_token");
-      const payload = this.authUseCase.decodeJWT(token);
-      if (!payload) throw Error("Invalid Token");
-      const { userId } = JSON.parse(payload);
-      if (!userId) return null;
-      const user = await this.userRepository.findById(userId);
-      return user;
+      const validation = validateData<SignInDTO>(req.body, SignInSchema);
+      if (!validation.success) {
+        res.status(EStatusCodes.enum.badRequest).json({
+          error: validation.error,
+          message: "Invalid login credentials",
+          status: EStatusCodes.enum.badRequest,
+          description: "Validation failed for the provided email and password",
+          url: req.url,
+          path: req.path,
+        });
+        return
+      }
+      const { email, password } = validation.data;
+      const result = await this.authUseCase.signIn({ email, password });
+      if (!result.success) {
+        res.status(EStatusCodes.enum.unauthorized).json({
+          error: result.error,
+          message: "Authentication failed",
+          status: EStatusCodes.enum.unauthorized,
+          description: "Invalid email or password",
+          url: req.url,
+          path: req.path,
+        });
+        return
+      }
+      const responseData = {
+        data: result.data,
+        message: "Login successful",
+        status: EStatusCodes.enum.ok,
+        description: "User successfully logged in",
+        url: req.url,
+        path: req.path,
+        type: "Sign In",
+      };
+
+      this.setCookies(
+        res,
+        result.data.tokenPair?.accessToken as string,
+        result.data.tokenPair?.refreshToken as string
+      ).status(EStatusCodes.enum.ok).json(responseData);
     } catch (error) {
-      return null;
+      next(error);
+    }
+  }
+
+
+  async socialSignIn(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validation = validateData<SocialSignInDTO>(req.body, SocialSignInSchema);
+      if (!validation.success) {
+        res.status(EStatusCodes.enum.badRequest).json({
+          error: validation.error,
+          message: "Invalid social login credentials",
+          status: EStatusCodes.enum.badRequest,
+          description: "Validation failed for the provided social login data",
+          url: req.url,
+          path: req.path,
+        });
+        return
+      }
+
+      const user = validation.data;
+
+      const result = await this.authUseCase.signIn(user);
+      if (!result.success) {
+        res.status(EStatusCodes.enum.unauthorized).json({
+          error: result.error,
+          message: "Social authentication failed",
+          status: EStatusCodes.enum.unauthorized,
+          description: "Social login failed for the provided user details",
+          url: req.url,
+          path: req.path,
+        });
+        return
+      }
+      const responseData = {
+        data: result.data,
+        message: "Social login successful",
+        status: EStatusCodes.enum.ok,
+        description: "User successfully logged in using social account",
+        url: req.url,
+        path: req.path,
+        type: "Social Sign In",
+      };
+
+      this.setCookies(
+        res,
+        result.data.tokenPair?.accessToken as string,
+        result.data.tokenPair?.refreshToken as string
+      ).status(EStatusCodes.enum.ok).json(responseData);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+  async signOut(req: Request, res: Response, next: NextFunction) {
+    try {
+      // const userId = req.user!.userId!;
+      // await this.authUseCase.signOut(userId);
+      this.clearCookies(res).status(EStatusCodes.enum.ok)
+        .json({ message: "Successfully logged out" });
+    } catch (error) {
+      next(error);
     }
   }
 
   private getTokenOptions() {
-    const accessTokenOptions: CookieOptions = {
-      maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "strict",
-      httpOnly: true,
-      secure: env.in_prod,
-      path: "/",
-    };
-    const refreshTokenOptions: CookieOptions = {
-      maxAge: 12 * 4 * 24 * 60 * 60 * 60 * 1000,
-      sameSite: "strict",
-      httpOnly: true,
-      secure: env.in_prod,
-      path: "/",
-    };
-    return { accessTokenOptions, refreshTokenOptions };
+    return {
+      accessTokenOptions: {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000,
+      } as CookieOptions,
+      refreshTokenOptions: {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      } as CookieOptions,
+    }
   }
+
 
   private setCookies(
     res: Response,
-    { accessToken, refreshToken }: { refreshToken: string; accessToken: string }
+    accessToken?: string,
+    refreshToken?: string
   ) {
     const { accessTokenOptions, refreshTokenOptions } = this.getTokenOptions();
-    res
-      .cookie("access_token", accessToken, accessTokenOptions)
-      .cookie("refresh_token", refreshToken, refreshTokenOptions);
 
-    return res;
-  }
-
-  getToken(req: Request, tokenName: "access_token" | "refresh_token") {
-    const token = req.cookies[tokenName];
-    return token;
+    res.cookie("access_token", accessToken, accessTokenOptions);
+    res.cookie("refresh_token", refreshToken, refreshTokenOptions);
+    return res
   }
   private clearCookies(res: Response) {
-    const { accessTokenOptions, refreshTokenOptions } = this.getTokenOptions();
-    res
-      .clearCookie("access_token", { ...accessTokenOptions, maxAge: undefined })
-      .clearCookie("refresh_token", {
-        ...refreshTokenOptions,
-        maxAge: undefined,
-      });
-
-    return res;
+    res.clearCookie("access_token");
+    res.clearCookie("refresh_token");
+    return res
   }
 }
-const userRepositoryImpl = new UserRepositoryImpl(UserModel);
-export const authControllers = new AuthControllers(userRepositoryImpl);
+
+
+const userRepository = new UserRepositoryImpl(UserModel)
+const createUserUseCase = new CreateUserUseCase(userRepository)
+const authUseCase = new AuthUseCase(userRepository, createUserUseCase)
+export const authControllers = new AuthControllers(authUseCase)
