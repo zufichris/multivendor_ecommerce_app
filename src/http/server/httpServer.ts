@@ -1,11 +1,10 @@
-import { createServer, IncomingMessage, Server, ServerResponse } from "http";
+import http from "http";
 import { env } from "../../config/env";
 import { AppError } from "../../global/error";
-import { DB } from "../../config/dbConfig";
 import { logger } from "../../utils/logger";
 
 export function Start(app: Express.Application) {
-  const server = createServer(app);
+  const server = http.createServer(app);
   if (isNaN(Number(env.port)))
     throw new AppError({
       message: "Invalid port number",
