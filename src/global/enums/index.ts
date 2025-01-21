@@ -1,5 +1,5 @@
-
-export enum StatusCodes {
+import { z } from "zod";
+enum statusCodes {
     // 1xx: Informational
     continue = 100,
     switchingProtocols = 101,
@@ -51,3 +51,9 @@ export enum StatusCodes {
     gatewayTimeout = 504,
     httpVersionNotSupported = 505,
 }
+
+export const EStatusCodes = z.nativeEnum(statusCodes)
+
+export const ECurrency = z.enum(["USD", "EUR", "GBP", "JPY", "CFA"])
+
+export const ELanguageCode= z.enum(["en", "es", "fr", "de", "ja"]);

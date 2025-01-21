@@ -1,8 +1,9 @@
-import { StatusCodes } from "../enums";
+import mongoose from "mongoose";
 
 export interface IResponseData<TData> {
   data: TData;
-  status: StatusCodes;
+  status: number;
+  success: boolean
   message: string;
   description?: string;
   errors?: { [key: string]: any }[];
@@ -17,14 +18,30 @@ export interface IResponseData<TData> {
   path?: string;
 }
 
-export interface IResponseDataPaginated<TData>{
+export interface IResponseDataPaginated<TData> {
   data: TData[];
   page: number;
   limit: number;
   filterCount: number;
   totalCount?: number;
-  status: StatusCodes;
+  status: number;
   message: string;
+  success:boolean
+}
+export interface IQueryFilters<TData> {
+  page?: number,
+  limit?: number,
+  filter?: mongoose.FilterQuery<TData>,
+  projection?: mongoose.ProjectionType<TData>,
+  queryOptions?: Omit<mongoose.QueryOptions<TData>, "limit">,
+}
+
+export interface IQueryResult<TData = unknown> {
+  totalCount: number,
+  filterCount: number,
+  page: number,
+  limit: number,
+  data: TData[]
 }
 
 export type ID = string | number;
