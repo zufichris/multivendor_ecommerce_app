@@ -1,17 +1,20 @@
 import { z } from "zod";
-import { OAuthSchema, UserSchema } from "../../entities/user";
+import {  UserSchema } from "../../entities/user";
 
 export const CreateUserSchema = UserSchema.pick({
     email: true,
+    custId:true,
     firstName: true,
     lastName: true,
     profilePictureUrl: true,
     oauth: true,
     password: true,
     phoneNumber: true,
-    externalProvider: true,
+    externalProvider: true
 }).extend({
-    email: UserSchema.shape.email.email("Invalid Email")
+    email: UserSchema.shape.email.email("Invalid Email"),
+    isEmailVerified: z.boolean().default(false),
+    isActive: z.boolean().default(true),
 })
 
 export const SignInSchema = UserSchema.pick({
@@ -31,9 +34,7 @@ export const UpdateUserSchema = UserSchema.pick({
     })
 })
 
-export const SocialSignInSchema = CreateUserSchema.extend({
-    oauth: OAuthSchema.required()
-})
+export const SocialSignInSchema = CreateUserSchema
 export type CreateUserDTO = z.infer<typeof CreateUserSchema>
 export type SignInDTO = z.infer<typeof SignInSchema>
 export type SocialSignInDTO = z.infer<typeof SocialSignInSchema>
