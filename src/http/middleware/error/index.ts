@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../global/error";
 import { EStatusCodes } from "../../../global/enums";
+import { IResponseData } from "../../../global/entities";
+import { env } from "../../../config/env";
 
 export const notFound = (req: Request, res: Response, next: NextFunction) => {
     next(
@@ -18,8 +20,20 @@ export const errorHandler = (
     err: AppError<any>,
     req: Request,
     res: Response,
-    next: NextFunction
+    _: NextFunction
 ) => {
-    delete err?.stack
-    res.status(err?.error?.status ?? EStatusCodes.enum.badGateway).json(err)
+    const error: IResponseData<undefined> = {
+        success: false,
+        message: err?.message ?? "An Unexpected Error Occurred",
+        status: err?.error?.statusCode ?? EStatusCodes.enum.badGateway,
+        description: 'An Unexpected Error Occurred',
+        error: {
+            message: err?.message ?? "An Unexpected Error Occurred",
+        },
+        path: req.path,
+        url: req.url,
+        stack: env.in_prod ? undefined : err.stack,
+        type: err.error?.type ?? "Error",
+    }
+    res.status(error.status).json(error);
 };
