@@ -1,14 +1,50 @@
 import { z } from "zod";
 import { OAuthProviders } from "../../enums/auth";
 import { Role } from "../../enums/user";
-import { AddressSchema } from "../address";
+import { ECurrency, ELanguageCode } from "../../../global/enums";
 
-export const OAuthSchema=z.object({
-        provider: z.nativeEnum(OAuthProviders),
-        oauthId: z.string(),
-    })
+export const OAuthSchema = z.object({
+    provider: z.nativeEnum(OAuthProviders),
+    oauthId: z.string(),
+})
+const PreferencesSchema = z.object({
+    language: z.nativeEnum(ELanguageCode.Enum).default(ELanguageCode.enum.en),
+    currency: z.nativeEnum(ECurrency.Enum).default(ECurrency.enum.USD),
+    notificationPreferences: z.object({
+        email: z.boolean().default(true),
+        sms: z.boolean().default(false),
+        push: z.boolean().default(true),
+    }),
+});
+
+export const UserStatsSchema = z.object({
+    totalOrders: z.number().default(0),
+    totalSpent: z.number().default(0),
+    averageOrderValue: z.number().default(0),
+    favoriteVendors: z.array(
+        z.object({
+            vendorName: z.string(),
+            vendorId: z.string(),
+        })
+    ).default([]),
+    recentlyViewedProducts: z.array(
+        z.object({
+            productId: z.string(),
+            viewedAt: z.date().default(new Date()),
+        })
+    ).default([]),
+    ordersHistory: z.array(
+        z.object({
+            orderId: z.string(),
+            totalAmount: z.number(),
+            orderDate: z.date(),
+        })
+    ).default([]),
+});
+
 export const UserSchema = z.object({
-    id: z.string(),
+    id: z.string().optional(),
+    custId: z.string().optional(),
     email: z.string().email(),
     password: z.string().nullable().optional(),
     isEmailVerified: z.boolean(),
@@ -28,10 +64,28 @@ export const UserSchema = z.object({
         external: z.boolean(),
         url: z.string()
     }).nullable().optional(),
-    address: AddressSchema.array().nullable().optional(),
     roles: z.array(z.nativeEnum(Role)).default([Role.User]),
     isActive: z.boolean(),
+    preferences: PreferencesSchema.default({
+        language: "en",
+        currency: "USD",
+        notificationPreferences: {
+            email: true,
+            sms: false,
+            push: true,
+        },
+    }),
+    stats: UserStatsSchema.default({
+        averageOrderValue: 0,
+        favoriteVendors: [],
+        ordersHistory: [],
+        recentlyViewedProducts: [],
+        totalOrders: 0,
+        totalSpent: 0
+    })
 });
 
 
 export type TUser = z.infer<typeof UserSchema>;
+export type TUserStats = z.infer<typeof UserStatsSchema>;
+export type TUserPreferences = z.infer<typeof PreferencesSchema>
