@@ -7,8 +7,9 @@ export const AddressTypeSchema = z.enum([
 ]);
 
 export const AddressSchema = z.object({
-    id: z.string().uuid(),
-    userId: z.string().uuid(),
+    id: z.string().optional(),
+    userId: z.string(),
+    custId: z.string(),
     type: AddressTypeSchema.default("BOTH"),
     firstName: z.string().min(1),
     lastName: z.string().min(1),
@@ -34,15 +35,8 @@ export const AddressSchema = z.object({
     }).optional(),
     deliveryInstructions: z.string().optional(),
     addressLabel: z.string().optional(),
-    coordinates: z.object({
-        latitude: z.number(),
-        longitude: z.number(),
-    }).optional(),
-    taxId: z.string().optional(),
-    vatNumber: z.string().optional(),
-    metadata: z.record(z.string(), z.unknown()).optional(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
 });
 
 export type TAddress = z.infer<typeof AddressSchema>
