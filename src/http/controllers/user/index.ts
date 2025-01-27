@@ -8,10 +8,11 @@ import { UpdateUserUseCase } from "../../../domain/users/useCases/UpdateUser";
 import { validateData } from "../../../utils/functions";
 import { CreateUserDTO, CreateUserSchema, UpdateUserDTO, UpdateUserSchema } from "../../../data/dto/user";
 import { EStatusCodes } from "../../../global/enums";
-import { IResponseData, IResponseDataPaginated } from "../../../global/entities";
+import { IQueryFilters, IResponseData, IResponseDataPaginated } from "../../../global/entities";
 import { TUser } from "../../../data/entities/user";
 import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
+import { AddressModel } from "../../../data/orm/models/address";
 
 export class UserControllers {
   constructor(
@@ -21,74 +22,124 @@ export class UserControllers {
     private readonly changeStatusCase: ChangeUserStatusUseCase,
     private readonly changeRoleCase: ChangeUserRoleUseCase,
     private readonly updateCase: UpdateUserUseCase
-  ) { }
+  ) {
+    this.queryUsers = this.queryUsers.bind(this)
+    this.createUser = this.createUser.bind(this)
+    this.getMe = this.getMe.bind(this)
+  }
+  async getMe(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        const data = {
+          ...this.generateMetadata(req, "Not Found"),
+          status: EStatusCodes.enum.notFound,
+          success: false,
+        }
+        res.status(data.status).json(data)
+        return
+      }
+
+      const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "User retrieved successfully"),
+        data: req.user as TUser,
+        status: EStatusCodes.enum.ok,
+        success: true
+      };
+      res.status(data.status).json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
 
   async createUser(req: Request, res: Response, next: NextFunction) {
     try {
-      let data: IResponseData<TUser | null> = {
-        path: req.path,
-        url: req.url,
-        type: "Create User",
-        status: EStatusCodes.enum.badRequest,
-        success: false,
-        message: "Validation Failed",
-        data: null,
-        errors: [],
-      };
+
 
       const validate = validateData<CreateUserDTO>(req.body, CreateUserSchema);
       if (!validate.success) {
-        data.errors = [{ validation: validate.error }];
+        const data = {
+          ...this.generateMetadata(req, "Validation Failed"),
+          status: EStatusCodes.enum.badRequest,
+          success: false,
+          description: validate.error
+        }
         res.status(data.status).json(data);
         return
       }
 
       const result = await this.createUseCase.execute(validate.data);
       if (!result.success) {
-        data.status = EStatusCodes.enum.conflict;
-        data.message = "User creation conflict";
-        data.errors = [{ conflict: result.error }];
+        const data = {
+          ...this.generateMetadata(req, result.error),
+          status: EStatusCodes.enum.badRequest,
+          success: false,
+          description: result.error,
+        }
         res.status(data.status).json(data);
         return
       }
 
-      data.status = EStatusCodes.enum.created;
-      data.success = true;
-      data.message = "User created successfully";
-      data.data = result.data;
+      const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "User Created Successfully"),
+        status: EStatusCodes.enum.badRequest,
+        success: true,
+        data: result.data,
+      }
       res.status(data.status).json(data);
-
     } catch (error) {
       next(error);
     }
   }
-
+  private generateQuery(query: qs.ParsedQs) {
+    const {
+      page = 1,
+      limit = 10,
+    } =
+      query;
+    const filters: IQueryFilters<TUser> = {
+      filter: {
+        isActive: !query.show_inactive ? true : { "$in": [true, false] },
+      },
+      limit: Number(limit ?? 10),
+      page: Number(page ?? 1),
+      projection: {
+        firstName: true,
+        lastName: true,
+        createdAt: true,
+        custId: true,
+        email: true,
+        id: true,
+        phoneNumber: true,
+        profilePictureUrl: true,
+        isActive: true,
+        updatedAt: true
+      },
+    }
+    return filters
+  }
   async queryUsers(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, limit = 10 } = req.query;
-
-      const result = await this.queryCase.execute({ page: Number(page), limit: Number(limit) });
+      const query = this.generateQuery(req.query)
+      const result = await this.queryCase.execute(query, {
+        roles: req.user?.roles!,
+        userId: req.user?.id!
+      });
       if (!result.success) {
-        res.status(EStatusCodes.enum.internalServerError).json({
-          message: "Failed to query users",
-          status: EStatusCodes.enum.internalServerError,
-        });
+        const data = {
+          ...this.generateMetadata(req, result.error),
+          status: result.status ?? EStatusCodes.enum.badGateway,
+          success: false
+        }
+        res.status(data.status).json(data);
         return
       }
-
       const data: IResponseDataPaginated<TUser> = {
-        data: result.data.data,
-        page: result.data.page,
-        limit: result.data.limit,
-        filterCount: result.data.filterCount,
-        totalCount: result.data.totalCount,
+        ...this.generateMetadata(req, "User query successful"),
+        success: true,
         status: EStatusCodes.enum.ok,
-        message: "Users retrieved successfully",
-        success: true
-      };
-
+        ...result.data
+      }
       res.status(data.status).json(data);
-
     } catch (error) {
       next(error);
     }
@@ -99,17 +150,19 @@ export class UserControllers {
       const userId = req.params.userId;
       const result = await this.getCase.execute({ userId });
       if (!result.success) {
-        res.status(EStatusCodes.enum.notFound).json({
-          message: `User with ID ${userId} not found`,
-          status: EStatusCodes.enum.notFound,
-        });
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "User Not Found"),
+          status: result.status ?? EStatusCodes.enum.notFound,
+          success: false
+        }
+        res.status(data.status).json(data);
         return
       }
 
       const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "User retrieved successfully"),
         data: result.data,
         status: EStatusCodes.enum.ok,
-        message: "User retrieved successfully",
         success: true
       };
 
@@ -122,24 +175,11 @@ export class UserControllers {
 
   async updateUser(req: Request, res: Response, next: NextFunction) {
     try {
-      let data: IResponseData<unknown> = {
-        path: req.path,
-        url: req.url,
-        type: "Update User",
-        success: false,
-        message: "Update User Failed",
-        status: EStatusCodes.enum.badRequest,
-        data: null,
-      }
-
       const validate = validateData<UpdateUserDTO>(req.body, UpdateUserSchema);
       if (!validate.success) {
-        data = {
-          ...data,
-          message: "Validation Failed",
-          errors: [{ validation: validate.error }],
+        const data = {
+          ...this.generateMetadata(req, "Validation Failed"),
           status: EStatusCodes.enum.badRequest,
-          data: null,
           success: false,
         };
         res.status(data.status).json(data);
@@ -148,22 +188,24 @@ export class UserControllers {
 
       const result = await this.updateCase.execute(validate.data, {
         roles: req.user?.roles!,
-        userId: req.user?.userId!
+        userId: req.user?.id!
       });
       if (!result.success) {
-        data.status = EStatusCodes.enum.conflict;
-        data.message = "User update conflict";
-        data.errors = [{ conflict: result.error }];
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "User update conflict"),
+          success: false,
+          status: result.status ?? EStatusCodes.enum.conflict
+        }
         res.status(data.status).json(data);
         return
       }
-
-      data.status = EStatusCodes.enum.ok;
-      data.success = true;
-      data.message = "User updated successfully";
-      data.data = result.data;
+      const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "User updated successfully"),
+        status: EStatusCodes.enum.ok,
+        success: true,
+        data: result.data
+      }
       res.status(data.status).json(data);
-
     } catch (error) {
       next(error);
     }
@@ -171,26 +213,28 @@ export class UserControllers {
 
   async changeUserStatus(req: Request, res: Response, next: NextFunction) {
     try {
-
+      const toChangeId = req.params.userId
       const result = await this.changeStatusCase.execute({
-        userId: req.user?.userId!,
+        userId: toChangeId,
         isActive: true
       }, {
         roles: req.user?.roles!,
-        userId: req.user?.userId!
+        userId: req.user?.id!
       });
       if (!result.success) {
-        res.status(EStatusCodes.enum.badRequest).json({
-          message: "Failed to change user status",
-          status: EStatusCodes.enum.badRequest,
-        });
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "Failed to change user status"),
+          status: result.status ?? EStatusCodes.enum.badGateway,
+          success: false
+        }
+        res.status(data.status).json(data);
         return
       }
 
       const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "User status updated successfully"),
         data: result.data,
         status: EStatusCodes.enum.ok,
-        message: "User status updated successfully",
         success: true
       };
 
@@ -207,32 +251,44 @@ export class UserControllers {
       const role = req.body.role;
 
       const result = await this.changeRoleCase.execute({ userId, roles: role }, {
-        userId: req.user?.userId!,
+        userId: req.user?.id!,
         roles: req.user?.roles!
       });
       if (!result.success) {
-        res.status(EStatusCodes.enum.badRequest).json({
-          message: "Failed to change user role",
-          status: EStatusCodes.enum.badRequest,
-        });
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "Failed to change user role"),
+          status: result.status ?? EStatusCodes.enum.badGateway,
+          success: false
+        }
+        res.status(data.status).json(data);
         return
       }
 
       const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "User role updated successfully"),
         data: result.data,
         status: EStatusCodes.enum.ok,
-        message: "User role updated successfully",
         success: true
       };
-
       res.status(data.status).json(data);
-
     } catch (error) {
       next(error);
     }
   }
+
+  private generateMetadata(req: Request, message: string, type?: string) {
+    return ({
+      url: req.url,
+      path: req.path,
+      type: type ?? "User",
+      message,
+      error: {
+        message
+      }
+    })
+  }
 }
-const userRepository = new UserRepositoryImpl(UserModel)
+const userRepository = new UserRepositoryImpl(UserModel, AddressModel)
 export const userControllers = new UserControllers(
   new CreateUserUseCase(userRepository),
   new QueryUsersUseCase(userRepository),
