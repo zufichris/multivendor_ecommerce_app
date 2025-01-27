@@ -5,27 +5,33 @@ import { EStatusCodes } from "../../../global/enums";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
 import { IUserRepository } from "../repositories";
 
-export class QueryUsersUseCase implements BaseUseCase<IQueryFilters<TUser>, IQueryResult<TUser>, AuthContext> {
+export class QueryUsersUseCase implements BaseUseCase<IQueryFilters<TUser>, IQueryResult<TUser> & {
+  activeCount: number,
+  suspendedCount: number,
+}, AuthContext> {
   constructor(private readonly userRepository: IUserRepository) { }
-  async execute(input: IQueryFilters<TUser>, context?: AuthContext): Promise<UseCaseResult<IQueryResult<TUser>>> {
+  async execute(input: IQueryFilters<TUser>, context?: AuthContext): Promise<UseCaseResult<IQueryResult<TUser> & {
+    activeCount: number,
+    suspendedCount: number,
+  }>> {
     try {
       const limit = input.limit ?? 10
       const page = input.page ?? 1
       input.limit = limit;
       input.page = page
-      if (!context?.userId || (context?.roles.includes(Role.Admin))) {
-        return handleUseCaseError("Unauthorized", "Query Users", EStatusCodes.enum.forbidden)
+      if (!context?.userId || !(context?.roles.includes(Role.Admin))) {
+        return handleUseCaseError({ error: "Unauthorized", title: "Query Users", status: EStatusCodes.enum.forbidden })
       }
-      const data = await this.userRepository.query(input)
-      if (!data) {
-        return handleUseCaseError("Error Getting Users", "Query Users")
+      const result = await this.userRepository.query(input)
+      if (!result) {
+        return handleUseCaseError({ title: "Query Users" })
       }
       return ({
         success: true,
-        data: data
+        data: result
       })
     } catch (error) {
-      return handleUseCaseError(error, "Query Users")
+      return handleUseCaseError({ title: "Query Users" })
     }
   }
 }

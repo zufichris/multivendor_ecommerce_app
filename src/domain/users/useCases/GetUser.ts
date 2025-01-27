@@ -11,7 +11,7 @@ export class GetUserUseCase implements BaseUseCase<| { userId: string } | { emai
         try {
             if (!context?.userId ||
                 (context?.userId !== input.userId && !context.roles.includes(Role.Admin))) {
-                return handleUseCaseError("Unauthorized", "Get User", EStatusCodes.enum.forbidden);
+                return handleUseCaseError({ error: "Unauthorized", title: "Get User", status: EStatusCodes.enum.forbidden });
             }
 
             let data: TUser | null = null;
@@ -23,7 +23,7 @@ export class GetUserUseCase implements BaseUseCase<| { userId: string } | { emai
             }
 
             if (!data) {
-                return handleUseCaseError("User not found", "Get User", EStatusCodes.enum.notFound);
+                return handleUseCaseError({ error: "User not found", title: "Get User", status: EStatusCodes.enum.notFound });
             }
 
             return {
@@ -31,7 +31,7 @@ export class GetUserUseCase implements BaseUseCase<| { userId: string } | { emai
                 data,
             };
         } catch (error) {
-            return handleUseCaseError(error, "Get User");
+            return handleUseCaseError({ title: "Get User" });
         }
     }
 }

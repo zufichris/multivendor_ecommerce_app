@@ -12,15 +12,15 @@ export class UpdateUserUseCase implements BaseUseCase<UpdateUserDTO, TUser, Auth
     async execute(input: UpdateUserDTO, context: AuthContext): Promise<UseCaseResult<TUser>> {
         try {
             if (!context?.userId || (context?.roles.includes(Role.Admin))) {
-                return handleUseCaseError("Unauthorized", "Update User", EStatusCodes.enum.forbidden)
+                return handleUseCaseError({ error: "Unauthorized", title: "Update User", status: EStatusCodes.enum.forbidden })
             }
             const validate = validateData<UpdateUserDTO>(input, UpdateUserSchema);
             if (!validate.success) {
-                return handleUseCaseError(validate.error, "Update User", EStatusCodes.enum.badRequest);
+                return handleUseCaseError({ error: validate.error, title: "Update User", status: EStatusCodes.enum.badRequest });
             }
-            const data = await this.userRepository.update(input.userId!, validate.data!);
+            const data = await this.userRepository.update(input.userId, validate.data);
             if (!data) {
-                return handleUseCaseError("Error Updating User", "Update User");
+                return handleUseCaseError({ error: "Error Updating User", title: "Update User" });
             }
 
             return {
@@ -28,7 +28,7 @@ export class UpdateUserUseCase implements BaseUseCase<UpdateUserDTO, TUser, Auth
                 data,
             };
         } catch (error) {
-            return handleUseCaseError(error, "Update User");
+            return handleUseCaseError({ title: "Update User" });
         }
     }
 }

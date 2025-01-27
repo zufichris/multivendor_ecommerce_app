@@ -10,14 +10,14 @@ export class ChangeUserRoleUseCase implements BaseUseCase<{ userId: string, role
     async execute(input: { userId: string, roles: Role[] }, context: AuthContext): Promise<UseCaseResult<TUser>> {
         try {
             if (!context?.userId || (context?.roles.includes(Role.Admin))) {
-                return handleUseCaseError("Unauthorized", "Change User Role", EStatusCodes.enum.forbidden);
+                return handleUseCaseError({ error: "Unauthorized", title: "Change User Role", status: EStatusCodes.enum.forbidden });
             }
 
             const data = await this.userRepository.update(input.userId, {
                 roles: input.roles
             });
             if (!data) {
-                return handleUseCaseError("Error Changing User Role", "Change User Role");
+                return handleUseCaseError({ error: "Error Changing User Role", title: "Change User Role" });
             }
 
             return {
@@ -25,7 +25,7 @@ export class ChangeUserRoleUseCase implements BaseUseCase<{ userId: string, role
                 data,
             };
         } catch (error) {
-            return handleUseCaseError(error, "Change User Role");
+            return handleUseCaseError({title:"Change User Role"});
         }
     }
 }

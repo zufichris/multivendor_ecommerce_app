@@ -11,14 +11,14 @@ export class ChangeUserStatusUseCase implements BaseUseCase<{ userId: string, is
     async execute(input: { userId: ID, isActive: boolean }, context: AuthContext): Promise<UseCaseResult<TUser>> {
         try {
             if (!context?.userId || (context?.roles.includes(Role.Admin))) {
-                return handleUseCaseError("Unauthorized", "Change User Status", EStatusCodes.enum.forbidden);
+                return handleUseCaseError({ error: "Unauthorized", title: "Change User Status", status: EStatusCodes.enum.forbidden });
             }
 
             const data = await this.userRepository.update(input.userId, {
                 isActive: input.isActive
             });
             if (!data) {
-                return handleUseCaseError("Error Changing User Status", "Change User Status");
+                return handleUseCaseError({ error: "Error Changing User Status", title: "Change User Status" });
             }
 
             return {
@@ -26,7 +26,7 @@ export class ChangeUserStatusUseCase implements BaseUseCase<{ userId: string, is
                 data,
             };
         } catch (error) {
-            return handleUseCaseError(error, "Change User Status");
+            return handleUseCaseError({ title: "Change User Status" });
         }
     }
 }
