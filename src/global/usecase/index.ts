@@ -1,37 +1,26 @@
 import { Role } from "../../data/enums/user";
 import { ID } from "../entities";
 import { EStatusCodes } from "../enums";
-import { AppError } from "../error";
 export type UseCaseResult<T> = | {
   success: true;
   data: T;
+  status?: number
 }
   | {
     success: false;
-    error: AppError<any>;
+    error: string;
+    status?: number
   };
 
-export function handleUseCaseError(error: unknown, actionName: string, status?: number): { success: false, error: AppError<any> } {
-  const statusCode = status || EStatusCodes.enum.badGateway
-  if (error instanceof Error) {
-    return ({
-      success: false,
-      error: new AppError({
-        ...error,
-        message: `Error-${actionName}-${error.message}`,
-        statusCode,
-      })
-    })
-  } else {
-    return ({
-      success: false,
-      error: new AppError({
-        message: `Error-${actionName}-${error}`,
-        name: actionName,
-        statusCode
-      })
-    })
-  }
+export function handleUseCaseError({ title, error = "An unexpected Error Occurred", status = EStatusCodes.enum.badGateway }: {
+  title: string
+  error?: string,
+  status?: number,
+}): { success: false, error: string } {
+  return ({
+    error: `${title}-${error}`,
+    success: false
+  })
 }
 export type AuthContext = {
   userId: ID,
