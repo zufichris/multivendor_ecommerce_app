@@ -3,21 +3,26 @@ import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../global/error";
 import { OAuthProviders } from "../../../data/enums/auth";
 import { GoogleAuthSchema, TGoogleAuthConfig } from "../../../config/google";
-import { CreateUserDTO } from "../../../data/dto/user";
+import { CreateUserDTO, SocialSignInDTO } from "../../../data/dto/user";
 import { validateData } from "../../../utils/functions";
 import { EStatusCodes } from "../../../global/enums";
+import { env } from "../../../config/env";
+import { IResponseData } from "../../../global/entities";
 
 interface GoogleProfile {
   id: string;
   email: string;
   name: string;
   picture: string;
+  verified_email: boolean
 }
 
 interface GoogleTokens {
   access_token: string;
   token_type: string;
   id_token: string;
+  expires_in: number,
+  refresh_token: string
 }
 
 export class GoogleAuthControllers {
@@ -55,7 +60,6 @@ export class GoogleAuthControllers {
     errorMessage: string
   ): Promise<T> {
     const response = await fetch(url, options);
-
     if (!response.ok) {
       throw new AppError({
         message: errorMessage,
@@ -64,15 +68,38 @@ export class GoogleAuthControllers {
         statusCode: response.status
       });
     }
-
-    return response.json();
+    const data = await response.json();
+    return data
   }
 
-  async authRequest(_: Request, res: Response, next: NextFunction): Promise<void> {
+  async authRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const options = this.createAuthOptions();
       const authUrl = `${this.config.codeAccessUrl}?${options}`;
-      res.redirect(authUrl);
+      const callback = req.query.callback
+      if (callback) {
+        const validCallBack = env.google_callback_url.includes(callback as string)
+        if (!validCallBack) {
+          res.status(400).json({
+            status: 400,
+            success: false,
+            message: "Invalid Callback Url"
+          } as IResponseData<null>)
+        }
+        res.status(400).json({
+          success: true,
+          message: "Google auth url received",
+          status: 201,
+          type: "Goo google Auth Request",
+          redirect: {
+            path: authUrl
+          },
+          url: req.url
+        } as IResponseData<null>)
+      } else {
+        res.redirect(authUrl);
+      }
+
     } catch (error) {
       next(new AppError({
         message: "Failed to create Google Auth request URL",
@@ -86,7 +113,6 @@ export class GoogleAuthControllers {
   async getGoogleTokens(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const code = req.query.code as string | undefined;
-
       if (!code) {
         throw new AppError({
           message: "Invalid Google Authorization Code",
@@ -94,7 +120,6 @@ export class GoogleAuthControllers {
           statusCode: EStatusCodes.enum.badRequest
         });
       }
-
       const query = QueryString.stringify({
         code,
         client_id: this.config.clientId,
@@ -109,7 +134,6 @@ export class GoogleAuthControllers {
         { method: "POST" },
         "Failed to fetch Google tokens"
       );
-
       req.body = tokens;
       next();
     } catch (error) {
@@ -144,6 +168,8 @@ export class GoogleAuthControllers {
       const userData: CreateUserDTO = {
         firstName: profile.name,
         email: profile.email,
+        isEmailVerified: profile.verified_email,
+        isActive: true,
         profilePictureUrl: {
           external: true,
           url: profile.picture,
@@ -154,7 +180,6 @@ export class GoogleAuthControllers {
           provider: OAuthProviders.Google,
         },
       };
-
       req.body = userData;
       next();
     } catch (error) {
