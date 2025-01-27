@@ -44,7 +44,7 @@ export const env: TENV = {
   in_prod,
   port: Number(parsed?.PORT || 3000),
   mongo_uri: parsed?.MONGO_URI || "",
-  google_callback_url: `${url}/api/v1/auth/google/callback`,
+  google_callback_url: "http://localhost:3000/signin/google",
   google_client_id: parsed?.GOOGLE_CLIENT_ID || "",
   google_client_secret: parsed?.GOOGLE_CLIENT_SECRET || "",
   jwt_secret: parsed?.JWT_SECRET || "",
