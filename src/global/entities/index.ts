@@ -1,46 +1,69 @@
 import mongoose from "mongoose";
-
-export interface IResponseData<TData> {
-  data: TData;
+interface BaseResponseData {
   status: number;
-  success: boolean
   message: string;
   description?: string;
-  errors?: { [key: string]: any }[];
+  url?: string;
+  path?: string;
+  type?: string;
+}
+
+interface ResErr extends BaseResponseData {
+  success: false
+  error?: { message: string };
   stack?: any;
+}
+interface ResSuccess<TData> extends BaseResponseData {
+  success: true,
+  data: TData,
   redirect?: {
     path: string;
   };
-  type?: string;
   fieldsModified?: number;
   documentsModified?: number;
-  url?: string;
-  path?: string;
 }
 
-export interface IResponseDataPaginated<TData> {
-  data: TData[];
+
+interface Pagination<TData> extends ResSuccess<TData[]> {
   page: number;
   limit: number;
+  totalPages: number;
   filterCount: number;
-  totalCount?: number;
-  status: number;
-  message: string;
-  success:boolean
+  totalCount: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  firstItemIndex: number;
+  lastItemIndex: number;
+  sortField?: string;
+  sortOrder?: "asc" | "desc";
+  nextPage?: number;
+  previousPage?: number;
 }
+export type IResponseData<TData> = ResSuccess<TData> | ResErr
+export type IResponseDataPaginated<TData> = Pagination<TData> | ResErr
+
 export interface IQueryFilters<TData> {
   page?: number,
   limit?: number,
   filter?: mongoose.FilterQuery<TData>,
   projection?: mongoose.ProjectionType<TData>,
-  queryOptions?: Omit<mongoose.QueryOptions<TData>, "limit">,
+  queryOptions?: mongoose.QueryOptions<TData>,
 }
 
 export interface IQueryResult<TData = unknown> {
-  totalCount: number,
-  filterCount: number,
-  page: number,
-  limit: number,
+  page: number;
+  limit: number;
+  totalPages: number;
+  filterCount: number;
+  totalCount: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  firstItemIndex: number;
+  lastItemIndex: number;
+  sortField?: string;
+  sortOrder?: "asc" | "desc";
+  nextPage?: number;
+  previousPage?: number;
   data: TData[]
 }
 
