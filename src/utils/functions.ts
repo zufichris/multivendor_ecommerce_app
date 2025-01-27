@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import z, { string, unknown } from "zod";
+import { IBaseRepository } from "../global/repository";
 
 /**
  * Converts data to Array
@@ -65,4 +66,65 @@ export function validateBeforeSave(
       next();
     }
   });
+}
+
+/**
+ * 
+ * @param repository The Repository
+ * @param prefix  The Prefix of UnitId
+ * @param entity  The Entity 
+ * @returns   string or null
+ */
+
+export async function getUnitId<IRepository extends IBaseRepository<unknown, unknown>>(
+  repository: IRepository,
+  prefix: string,
+  entity: string,
+): Promise<string | null> {
+  try {
+    const count = await repository.count()
+    if (!count) {
+      return `${prefix}0001`;
+    }
+
+    const nextNumber = (count + 1).toString().padStart(4, '0');
+    return `${prefix}${nextNumber}`;
+  } catch (error) {
+    throw new Error(`Error Getting for ${entity}`);
+  }
+}
+
+
+export function getQueryMetaData({ page, filterCount, limit, totalCount }: {
+  totalCount: number,
+  page: number,
+  limit: number,
+  filterCount: number
+}) {
+  const skip = (page - 1) * limit
+  const totalPages = Math.ceil(filterCount / limit);
+  const hasNextPage = page < totalPages;
+  const hasPreviousPage = page > 1;
+  const previousPage = hasPreviousPage ? page - 1 : undefined;
+  const nextPage = hasNextPage ? page + 1 : undefined;
+  const firstItemIndex = (page - 1) * skip + 1;
+  const lastItemIndex = Math.min(page * skip, totalCount);
+  // const sortField = 'createdAt';
+  // const sortOrder = "asc";
+
+  return ({
+    totalPages,
+    hasNextPage,
+    hasPreviousPage,
+    previousPage,
+    nextPage,
+    firstItemIndex,
+    lastItemIndex,
+    // sortField,
+    // sortOrder,
+    page,
+    filterCount,
+    limit,
+    totalCount
+  })
 }
