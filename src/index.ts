@@ -20,7 +20,14 @@ app.use(
 );
 app.use(cookieParser());
 app.use(loggerMiddleware)
+
 app.use("/api/v1", router);
+app.get("/", (_, res) => {
+    res.send(`
+        <h1>Welcome to Vendor Verse API</h1></br>
+        <a href='/api/v1'>Explore API</a>
+    `)
+})
 app.use(notFound);
 app.use(errorHandler);
 Start(app);
