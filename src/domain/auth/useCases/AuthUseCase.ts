@@ -1,6 +1,6 @@
 import JWT from 'jsonwebtoken';
 import bcrypt from "bcrypt"
-import { CreateUserDTO, CreateUserSchema, SignInDTO, SocialSignInDTO } from "../../../data/dto/user";
+import { CreateUserDTO, CreateUserSchema, SignInDTO, SocialSignInDTO, SocialSignInSchema } from "../../../data/dto/user";
 import { TUser } from "../../../data/entities/user";
 import { ID } from "../../../global/entities";
 import { EStatusCodes } from "../../../global/enums";
@@ -9,67 +9,78 @@ import { validateData } from "../../../utils/functions";
 import { logger } from "../../../utils/logger";
 import { IUserRepository } from "../../users/repositories";
 import { CreateUserUseCase } from "../../users/useCases/CreateUser";
-import { AuthRepository, TokenPair } from "../repository";
+import { AutUseCaseRepository, TokenPair } from "../repository";
 import { env } from '../../../config/env';
-import { Role } from '../../../data/enums/user';
 
 
-export class AuthUseCase extends AuthRepository {
+export class AuthUseCase extends AutUseCaseRepository {
   constructor(private readonly userRepository: IUserRepository, private readonly createNewUser: CreateUserUseCase) {
     super()
+    this.signUp = this.signUp.bind(this);
+    this.signIn = this.signIn.bind(this);
+    this.signOut = this.signOut.bind(this);
+    this.signJWT = this.signJWT.bind(this);
+    this.decodeJWT = this.decodeJWT.bind(this);
+    this.generateTokens = this.generateTokens.bind(this);
+    this.hashPassword = this.hashPassword.bind(this);
+    this.verifyPassword = this.verifyPassword.bind(this);
   }
 
   async signUp(data: CreateUserDTO): Promise<UseCaseResult<TUser>> {
     try {
       const validate = validateData<CreateUserDTO>(data, CreateUserSchema)
-      if (!validate.success)
-        return handleUseCaseError("Invalid data", "Sign Up", EStatusCodes.enum.badRequest)
-      const hashedPassword = await this.hashPassword(validate.data?.password!)
-
-      const created = await this.createNewUser.execute({ ...data, password: hashedPassword })
-      if (!created.success) {
-        return handleUseCaseError(created.error, "SignUp")
+      if (!validate.success) {
+        return handleUseCaseError({ error: "Invalid data", title: "Sign Up", status: EStatusCodes.enum.badRequest })
       }
+      const hashedPassword = await this.hashPassword(validate.data?.password!)
+      data.password = hashedPassword
+      const created = await this.createNewUser.execute(data)
+      if (!created.success) {
+        return handleUseCaseError({ error: created.error, title: "SignUp" })
+      }
+      const tokens = this.generateTokens(created.data);
+      created.data.tokenPair = { ...tokens, provider: undefined }
       return created
     } catch (error) {
-      return handleUseCaseError(error, "Sign Up")
+      return handleUseCaseError({ title: "Sign Up" })
     }
   }
   async signIn(data: SignInDTO | SocialSignInDTO): Promise<UseCaseResult<TUser>> {
     try {
       const validate = validateData<CreateUserDTO>(data, CreateUserSchema)
       if (!validate.success) {
-        return handleUseCaseError("Invalid Email Or Password", "SignIn")
+        return handleUseCaseError({ error: `Invalid Email Or Password-${validate.error}`, title: "SignIn" })
       }
-      let exists = await this.userRepository.findByEmail(validate.data?.email!);
+      let exists = await this.userRepository.findByEmail(validate.data.email);
       let externalProvider = validate.data?.externalProvider
 
       if (!exists && !externalProvider) {
-        return handleUseCaseError("No Account With this Credentials", "SignIn")
+        return handleUseCaseError({ error: "No Account With this Credentials", title: "SignIn" })
       }
 
       if (!exists && externalProvider) {
         //handle OAuth first signIn
-        const newUser = await this.createNewUser.execute(validate?.data!)
+        const validateNewOAuth = validateData<SocialSignInDTO>(data, SocialSignInSchema)
+        if (!validateNewOAuth.success) {
+          return handleUseCaseError({ error: `Create User from ${externalProvider}- ${validateNewOAuth.error}`, title: `${externalProvider} SignIn` })
+        }
+        const newUser = await this.createNewUser.execute(validateNewOAuth?.data)
         if (!newUser.success) {
-          return handleUseCaseError(`Create User from ${externalProvider}`, `${externalProvider} SignIn`)
+          return handleUseCaseError({ error: `Create User from ${externalProvider}`, title: `${externalProvider} SignIn` })
         }
         exists = newUser.data
       }
 
-      if (exists && externalProvider) {
-        //handle OAuth  signIn
-      }
-
       if (exists && !externalProvider) {
-        //Email and Password
-        const matched = await this.verifyPassword(validate.data?.password!, exists?.password!);
+        const existPassword = await this.userRepository.getPasswordHash(exists.id!)
+
+        const matched = await this.verifyPassword(validate.data?.password!, existPassword ?? "");
         if (!matched) {
-          return handleUseCaseError("Invalid Email Or Password", "SignIn")
+          return handleUseCaseError({ error: "Invalid Email Or Password", title: "SignIn" })
         }
       }
-
-      const tokens = this.generateTokens(exists?.id!, exists?.roles!);
+      const tokenData = { firstName: exists?.firstName, lastName: exists?.lastName, id: exists?.id, profilePictureUrl: exists?.profilePictureUrl, email: exists?.email!, roles: exists?.roles! }
+      const tokens = this.generateTokens(tokenData);
 
       const loggedIn = await this.userRepository.update(exists?.id!, {
         tokenPair: {
@@ -79,14 +90,14 @@ export class AuthUseCase extends AuthRepository {
         }
       });
       if (!loggedIn) {
-        return handleUseCaseError("Login Error", "SignIn")
+        return handleUseCaseError({ error: "Login Error", title: "SignIn" })
       }
       return ({
         data: loggedIn,
         success: true
       });
     } catch (error) {
-      return handleUseCaseError(error, "SignIn")
+      return handleUseCaseError({ title: "SignIn" })
     }
   }
   async signOut(userId: ID): Promise<void> {
@@ -103,29 +114,25 @@ export class AuthUseCase extends AuthRepository {
     }
   }
 
-  signJWT(payload: { userId: ID, roles: Role[] }, expiresIn: number): string {
+  signJWT(payload: Partial<TUser>, expiresIn: number): string {
     const token = JWT.sign(payload, env.jwt_secret, {
       expiresIn: expiresIn,
     });
     return token;
   }
 
-  decodeJWT(token: string): { userId: ID, roles: Role[] } | null {
+  decodeJWT(token: string): Partial<TUser> | null {
     const decoded = JWT.decode(token);
-    if (decoded && typeof decoded === "object" && "userId" in decoded) {
-      const data = {
-        userId: decoded.userId as ID,
-        roles: (decoded.role || [Role.User]) as Role[]
-      }
-      return data
+    if (decoded && typeof decoded === 'object') {
+      return decoded as Partial<TUser>
     }
     return null;
   }
 
 
-  generateTokens(userId: ID, roles: Role[]): TokenPair {
-    const refreshToken = this.signJWT({ userId, roles }, 12 * 4 * 7 * 24 * 60 * 60);
-    const accessToken = this.signJWT({ userId, roles }, 24 * 60 * 60);
+  generateTokens(user: Pick<TUser, "id" | "roles" | "email" | "profilePictureUrl" | "firstName" | "lastName">): TokenPair {
+    const refreshToken = this.signJWT(user, 12 * 4 * 7 * 24 * 60 * 60);
+    const accessToken = this.signJWT(user, 24 * 60 * 60);
     return { refreshToken, accessToken };
   }
   async hashPassword(password: string): Promise<string | null> {
