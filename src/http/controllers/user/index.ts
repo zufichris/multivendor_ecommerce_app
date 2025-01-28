@@ -9,10 +9,12 @@ import { validateData } from "../../../utils/functions";
 import { CreateUserDTO, CreateUserSchema, UpdateUserDTO, UpdateUserSchema } from "../../../data/dto/user";
 import { EStatusCodes } from "../../../global/enums";
 import { IQueryFilters, IResponseData, IResponseDataPaginated } from "../../../global/entities";
-import { TUser } from "../../../data/entities/user";
+import { TUser, TUserStats } from "../../../data/entities/user";
 import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
 import { AddressModel } from "../../../data/orm/models/address";
+import { AddAddressUseCase, GetAddressesUseCase, UpdateAddressUseCase } from "../../../domain/users/useCases/Addresses";
+import { AddressSchema, TAddress } from "../../../data/entities/address";
 
 export class UserControllers {
   constructor(
@@ -21,11 +23,15 @@ export class UserControllers {
     private readonly getCase: GetUserUseCase,
     private readonly changeStatusCase: ChangeUserStatusUseCase,
     private readonly changeRoleCase: ChangeUserRoleUseCase,
-    private readonly updateCase: UpdateUserUseCase
+    private readonly updateCase: UpdateUserUseCase,
+    private readonly addAddressCase: AddAddressUseCase,
+    private readonly updateAddressCase: UpdateAddressUseCase,
+    private readonly getAddressesCase: GetAddressesUseCase
   ) {
     this.queryUsers = this.queryUsers.bind(this)
     this.createUser = this.createUser.bind(this)
     this.getMe = this.getMe.bind(this)
+    this.getUser = this.getUser.bind(this)
   }
   async getMe(req: Request, res: Response, next: NextFunction) {
     try {
@@ -53,8 +59,6 @@ export class UserControllers {
 
   async createUser(req: Request, res: Response, next: NextFunction) {
     try {
-
-
       const validate = validateData<CreateUserDTO>(req.body, CreateUserSchema);
       if (!validate.success) {
         const data = {
@@ -90,36 +94,10 @@ export class UserControllers {
       next(error);
     }
   }
-  private generateQuery(query: qs.ParsedQs) {
-    const {
-      page = 1,
-      limit = 10,
-    } =
-      query;
-    const filters: IQueryFilters<TUser> = {
-      filter: {
-        isActive: !query.show_inactive ? true : { "$in": [true, false] },
-      },
-      limit: Number(limit ?? 10),
-      page: Number(page ?? 1),
-      projection: {
-        firstName: true,
-        lastName: true,
-        createdAt: true,
-        custId: true,
-        email: true,
-        id: true,
-        phoneNumber: true,
-        profilePictureUrl: true,
-        isActive: true,
-        updatedAt: true
-      },
-    }
-    return filters
-  }
+
   async queryUsers(req: Request, res: Response, next: NextFunction) {
     try {
-      const query = this.generateQuery(req.query)
+      const query = this.generateUserQuery(req.query)
       const result = await this.queryCase.execute(query, {
         roles: req.user?.roles!,
         userId: req.user?.id!
@@ -147,8 +125,8 @@ export class UserControllers {
 
   async getUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.params.userId;
-      const result = await this.getCase.execute({ userId });
+      const custId = req.params.custId;
+      const result = await this.getCase.execute({ custId }, { roles: req.user?.roles!, userId: req.user?.id! });
       if (!result.success) {
         const data = {
           ...this.generateMetadata(req, result.error ?? "User Not Found"),
@@ -275,6 +253,193 @@ export class UserControllers {
       next(error);
     }
   }
+  async getAddresses(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { custId } = req.params;
+      if (!custId) {
+        const data = {
+          ...this.generateMetadata(req, "Customer ID is required"),
+          status: EStatusCodes.enum.badRequest,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+      const { page = 1, limit = 5, type = undefined } = req.query
+      const filter: { type?: string, custId: string } = {
+        type: type?.toString(),
+        custId
+      }
+      if (!filter.type)
+        delete filter.type
+
+      const result = await this.getAddressesCase.execute({
+        filter
+      });
+      if (!result.success) {
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "Failed to retrieve addresses"),
+          status: result.status ?? EStatusCodes.enum.notFound,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+
+      const data: IResponseDataPaginated<TAddress> = {
+        ...this.generateMetadata(req, "Addresses retrieved successfully"),
+        status: EStatusCodes.enum.ok,
+        success: true,
+        ...result.data,
+      };
+      res.status(data.status).json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+  async updateAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validate = validateData<TAddress>(req.body, AddressSchema);
+      if (!validate.success) {
+        const data = {
+          ...this.generateMetadata(req, "Validation Failed"),
+          status: EStatusCodes.enum.badRequest,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+
+      const result = await this.updateAddressCase.execute(validate.data);
+      if (!result.success) {
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "Failed to update address"),
+          status: result.status ?? EStatusCodes.enum.conflict,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+
+      const data: IResponseData<TAddress> = {
+        ...this.generateMetadata(req, "Address updated successfully"),
+        status: EStatusCodes.enum.ok,
+        success: true,
+        data: result.data,
+      };
+      res.status(data.status).json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+  async addAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validate = validateData<TAddress>(req.body, AddressSchema);
+      if (!validate.success) {
+        const data = {
+          ...this.generateMetadata(req, "Validation Failed"),
+          status: EStatusCodes.enum.badRequest,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+
+      const result = await this.addAddressCase.execute(validate.data);
+      if (!result.success) {
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "Failed to add address"),
+          status: result.status ?? EStatusCodes.enum.conflict,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+
+      const data: IResponseData<TAddress> = {
+        ...this.generateMetadata(req, "Address added successfully"),
+        status: EStatusCodes.enum.ok,
+        success: true,
+        data: result.data,
+      };
+      res.status(data.status).json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+  async getMeAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      req.params.custId = req.user?.custId!
+      await this.getAddresses(req, res, next)
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addMeAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      req.params.custId = req.user?.custId!
+      await this.addAddress(req, res, next)
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateMeAddress(req: Request, res: Response, next: NextFunction) {
+    try {
+      req.params.custId = req.user?.custId!
+      await this.updateAddress(req, res, next)
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getUserStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { custId } = req.params;
+      if (!custId) {
+        const data = {
+          ...this.generateMetadata(req, "User ID is required"),
+          status: EStatusCodes.enum.badRequest,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+      const result = await this.getCase.execute({ custId: custId.toString() }, {
+        roles: req.user?.roles!,
+        userId: req.user?.id!
+      });
+      if (!result.success) {
+        const data = {
+          ...this.generateMetadata(req, result.error ?? "Failed to retrieve user stats"),
+          status: result.status ?? EStatusCodes.enum.notFound,
+          success: false,
+        };
+        res.status(data.status).json(data);
+        return;
+      }
+
+      const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "User stats retrieved successfully"),
+        status: EStatusCodes.enum.ok,
+        success: true,
+        data: result.data,
+      };
+      res.status(data.status).json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMeStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      req.params.custId = req.user?.custId!
+      await this.getUserStats(req, res, next)
+    } catch (error) {
+      next(error);
+    }
+  }
 
   private generateMetadata(req: Request, message: string, type?: string) {
     return ({
@@ -287,6 +452,33 @@ export class UserControllers {
       }
     })
   }
+  private generateUserQuery(query: qs.ParsedQs) {
+    const {
+      page = 1,
+      limit = 10,
+    } =
+      query;
+    const filters: IQueryFilters<TUser> = {
+      filter: {
+        isActive: !query.show_inactive ? true : { "$in": [true, false] },
+      },
+      limit: Number(limit ?? 10),
+      page: Number(page ?? 1),
+      projection: {
+        firstName: true,
+        lastName: true,
+        createdAt: true,
+        custId: true,
+        email: true,
+        id: true,
+        phoneNumber: true,
+        profilePictureUrl: true,
+        isActive: true,
+        updatedAt: true
+      },
+    }
+    return filters
+  }
 }
 const userRepository = new UserRepositoryImpl(UserModel, AddressModel)
 export const userControllers = new UserControllers(
@@ -295,5 +487,7 @@ export const userControllers = new UserControllers(
   new GetUserUseCase(userRepository),
   new ChangeUserStatusUseCase(userRepository),
   new ChangeUserRoleUseCase(userRepository),
-  new UpdateUserUseCase(userRepository)
-)
+  new UpdateUserUseCase(userRepository),
+  new AddAddressUseCase(userRepository),
+  new UpdateAddressUseCase(userRepository),
+  new GetAddressesUseCase(userRepository))

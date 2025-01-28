@@ -11,6 +11,7 @@ import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
 import { CreateUserUseCase } from "../../../domain/users/useCases/CreateUser";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
+import { AddressModel } from "../../../data/orm/models/address";
 
 export class AuthControllers {
   public googleAuthControllers = new GoogleAuthControllers(GoogleAuthConfig);
@@ -78,7 +79,7 @@ export class AuthControllers {
   }
   async signIn(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = validateData<SignInDTO>(req.body, SignInSchema);
+      const validation = validateData<SignInDTO>(req.body, SignInSchema);;
       if (!validation.success) {
         const data = {
           ...this.generateMetadata(req, "Invalid login credentials"),
@@ -90,13 +91,11 @@ export class AuthControllers {
         res.status(data.status).json(data);
         return;
       }
-
-      const { email, password } = validation.data;
-      const result = await this.authUseCase.signIn({ email, password });
+      const result = await this.authUseCase.signIn(validation.data);
       if (!result.success) {
         const data = {
-          ...this.generateMetadata(req, "Authentication failed"),
-          status: EStatusCodes.enum.unauthorized,
+          ...this.generateMetadata(req, result.error ?? "Authentication failed", "Auth"),
+          status: result.status ?? EStatusCodes.enum.unauthorized,
           success: false,
           description: "Invalid email or password",
           error: result.error,
