@@ -1,27 +1,27 @@
 import { z } from "zod";
-import {  UserSchema } from "../../entities/user";
+import { UserSchema } from "../../entities/user";
 
 export const CreateUserSchema = UserSchema.pick({
     email: true,
-    custId:true,
+    custId: true,
     firstName: true,
     lastName: true,
     profilePictureUrl: true,
     oauth: true,
     password: true,
     phoneNumber: true,
-    externalProvider: true
+    externalProvider: true,
+    preferences: true,
+    stats: true,
+    isEmailVerified: true,
+    isActive: true,
 }).extend({
     email: UserSchema.shape.email.email("Invalid Email"),
-    isEmailVerified: z.boolean().default(false),
-    isActive: z.boolean().default(true),
 })
 
 export const SignInSchema = UserSchema.pick({
     email: true,
     password: true
-}).extend({
-    password: CreateUserSchema.shape.password
 })
 export const UpdateUserSchema = UserSchema.pick({
     firstName: true,
