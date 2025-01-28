@@ -47,7 +47,7 @@ export const UserSchema = z.object({
     custId: z.string().optional(),
     email: z.string().email(),
     password: z.string().nullable().optional(),
-    isEmailVerified: z.boolean(),
+    isEmailVerified: z.boolean().optional().default(false),
     createdAt: z.date().nullable().optional(),
     updatedAt: z.date().nullable().optional(),
     oauth: OAuthSchema.nullable().optional(),
@@ -65,17 +65,17 @@ export const UserSchema = z.object({
         url: z.string()
     }).nullable().optional(),
     roles: z.array(z.nativeEnum(Role)).default([Role.User]),
-    isActive: z.boolean(),
-    preferences: PreferencesSchema.default({
-        language: "en",
-        currency: "USD",
+    isActive: z.boolean().optional().default(true),
+    preferences: PreferencesSchema.optional().default({
+        language: ELanguageCode.enum.en,
+        currency: ECurrency.enum.USD,
         notificationPreferences: {
             email: true,
             sms: false,
             push: true,
         },
     }),
-    stats: UserStatsSchema.default({
+    stats: UserStatsSchema.optional().default({
         averageOrderValue: 0,
         favoriteVendors: [],
         ordersHistory: [],
