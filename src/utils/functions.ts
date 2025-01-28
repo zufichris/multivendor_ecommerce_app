@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import z, { string, unknown } from "zod";
 import { IBaseRepository } from "../global/repository";
+import { logger } from "./logger";
 
 /**
  * Converts data to Array
@@ -56,6 +57,7 @@ export function validateBeforeSave(
   zodSchema: z.ZodObject<any>,
   name: string
 ) {
+  logger.info(`Validating ${name} Before Saving....`)
   mongooseSchema.pre("save", function (this: mongoose.Document, next) {
     const parsed = zodSchema.safeParse(this.toObject());
     if (!parsed.success) {
