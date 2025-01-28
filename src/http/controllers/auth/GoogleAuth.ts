@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../global/error";
 import { OAuthProviders } from "../../../data/enums/auth";
 import { GoogleAuthSchema, TGoogleAuthConfig } from "../../../config/google";
-import { CreateUserDTO} from "../../../data/dto/user";
+import { CreateUserDTO } from "../../../data/dto/user";
 import { validateData } from "../../../utils/functions";
 import { EStatusCodes } from "../../../global/enums";
 import { env } from "../../../config/env";
@@ -165,7 +165,7 @@ export class GoogleAuthControllers {
         "Failed to fetch Google user profile"
       );
 
-      const userData: CreateUserDTO = {
+      const userData = {
         firstName: profile.name,
         email: profile.email,
         isEmailVerified: profile.verified_email,
