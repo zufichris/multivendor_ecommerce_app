@@ -10,7 +10,9 @@ export interface IUserRepository extends IBaseRepository<TUser, IQueryResult<TUs
 } | null> {
     findByEmail(email: string): Promise<TUser | null>;
     getPasswordHash(id: ID): Promise<string | null>;
-    getAddress({ userId, custId }: { custId?: string, userId: string }): Promise<TAddress | null>
+    getAddresses(options?: IQueryFilters<TAddress>): Promise<IQueryResult<TAddress> | null>
+    addAddress(input: Partial<TAddress>): Promise<TAddress | null>
+    updateAddress(input: Partial<TAddress>): Promise<TAddress | null>
 }
 
 export abstract class UserRepository implements IUserRepository {
@@ -26,5 +28,7 @@ export abstract class UserRepository implements IUserRepository {
     abstract count(filter?: FilterQuery<TUser> | undefined): Promise<number | null>
     abstract getPasswordHash(id: ID): Promise<string | null>
     abstract findOne(filter?: mongoose.RootFilterQuery<TUser>): Promise<TUser | null>
-    abstract getAddress({ userId, custId }: { custId?: string, userId: string }): Promise<TAddress | null>
+    abstract getAddresses(options?: IQueryFilters<TAddress>): Promise<IQueryResult<TAddress> | null>
+    abstract addAddress(input: Partial<TAddress>): Promise<TAddress | null>
+    abstract updateAddress(input: Partial<TAddress>): Promise<TAddress | null>
 }
