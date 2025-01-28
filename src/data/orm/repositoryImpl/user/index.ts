@@ -9,20 +9,21 @@ import { AddressDocument, AddressModel } from "../../models/address";
 import { TAddress } from "../../../entities/address";
 
 export class UserRepositoryImpl implements UserRepository {
-    constructor(private readonly userModel: typeof UserModel, private readonly addressModel: typeof AddressModel) {
+    constructor(private readonly userModel: typeof UserModel, private readonly addressModel?: typeof AddressModel) {
         this.count = this.count.bind(this)
+        this.findByEmail = this.findByEmail.bind(this)
+        this.findOne = this.findOne.bind(this)
     }
 
     async create(data: Partial<TUser>): Promise<TUser | null> {
         try {
-
             if (!data.email) {
                 throw new Error("Email and password are required");
             }
             const newUser: UserDocument = await this.userModel.create(data);
             return newUser.toJSON() as TUser | null
         } catch (error) {
-            logger.error("Error creating user", { error, data });
+            logger.error("Error Creating user", { error, data });
             return null;
         }
     }
@@ -56,8 +57,8 @@ export class UserRepositoryImpl implements UserRepository {
 
     async findByEmail(email: string): Promise<TUser | null> {
         try {
-            const user: UserDocument = await this.userModel.findOne({ email }).select("-password");
-            return user.toJSON() as TUser | null;
+            const user = await this.findOne({ email })
+            return user
         } catch (error: unknown) {
             logger.error("Error Getting User by Email", { error, email });
             return null;
@@ -139,19 +140,52 @@ export class UserRepositoryImpl implements UserRepository {
             throw error
         }
     }
-    async getAddress({ userId, custId }: { custId?: string, userId: string }): Promise<TAddress | null> {
+    async getAddresses(options?: IQueryFilters<TAddress>): Promise<IQueryResult<TAddress> | null> {
         try {
-            if (!userId && !custId)
-                throw new Error("Invalid User Id")
-            let address: AddressDocument | null
-            if (userId) {
-                address = await this.addressModel.findOne({ userId })
-            } else {
-                address = await this.addressModel.findOne({ custId })
-            }
-            return address as TAddress
+            if (!this.addressModel)
+                throw new Error("Address Model Not Found")
+            const page = options?.page ?? 1
+            const limit = options?.limit ?? 5
+            const skip = (page - 1) * limit
+            const [totalCount = 0, filterCount = 0, result] = await Promise.all([
+                await this.addressModel.countDocuments(),
+                await this.addressModel.countDocuments(options?.filter),
+                await this.addressModel.find(options?.filter ?? {}, options?.projection, { ...options?.queryOptions, skip, limit })
+            ])
+            const metadata = getQueryMetaData({
+                totalCount,
+                page,
+                limit,
+                filterCount
+            })
+            return ({
+                data: result as TAddress[],
+                ...metadata
+            })
         } catch (error) {
             logger.error("Error Getting Address", { error });
+            throw error
+        }
+    }
+    async addAddress(input: Partial<TAddress>): Promise<TAddress | null> {
+        try {
+            if (!this.addressModel)
+                throw new Error("Address Model Not Found")
+            const address: AddressDocument | null = await this.addressModel.create(input)
+            return address as TAddress | null
+        } catch (error) {
+            logger.error("Error Adding Address", { error })
+            throw error
+        }
+    }
+    async updateAddress(input: Partial<TAddress>): Promise<TAddress | null> {
+        try {
+            if (!this.addressModel)
+                throw new Error("Address Model Not Found")
+            const address: AddressDocument | null = await this.addressModel.create(input)
+            return address as TAddress | null
+        } catch (error) {
+            logger.error("Error Adding Address", { error })
             throw error
         }
     }
