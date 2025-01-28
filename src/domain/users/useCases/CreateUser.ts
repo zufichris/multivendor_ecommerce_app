@@ -1,4 +1,4 @@
-import { CreateUserDTO } from "../../../data/dto/user";
+import { CreateUserDTO, CreateUserSchema } from "../../../data/dto/user";
 import { TUser, UserSchema } from "../../../data/entities/user";
 import { BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
 import { IUserRepository } from "../repositories";
@@ -8,9 +8,9 @@ import { Role } from "../../../data/enums/user";
 
 export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
   constructor(private readonly userRepository: IUserRepository) { }
-  async execute(input: CreateUserDTO, context?: void | undefined): Promise<UseCaseResult<TUser>> {
+  async execute(input: any, context?: void | undefined): Promise<UseCaseResult<TUser>> {
     try {
-      const validate = validateData<CreateUserDTO>(input, UserSchema)
+      const validate = validateData<CreateUserDTO>(input, CreateUserSchema)
       if (!validate.success)
         return handleUseCaseError({ error: validate.error, title: "Create User", status: EStatusCodes.enum.badRequest })
       const exists = await this.userRepository.findByEmail(validate.data.email)
@@ -28,17 +28,16 @@ export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
         custId: custId!
       }
       const created = await this.userRepository.create(data)
-
       if (!created) {
         return handleUseCaseError({ error: "Error Creating User", title: "Create User" })
       }
-      created.password = null
+      created.password = undefined
       return ({
         data: created,
         success: true
       })
     } catch (error) {
-      return handleUseCaseError({ title: "Create User" })
+      return handleUseCaseError({ title: "Create User",status:500 })
     }
   }
 }
