@@ -3,73 +3,64 @@ import { TUser, TUserPreferences, TUserStats, UserSchema } from "../../../entiti
 import { OAuthProviders } from "../../../enums/auth";
 import { Role } from "../../../enums/user";
 import { validateBeforeSave } from "../../../../utils/functions";
-import { TABLES } from "../../../../global/enums";
+import { ECurrency, ELanguageCode } from "../../../../global/enums";
 
 export type UserDocument = TUser & mongoose.Document;
-const preferenceMongooseSchema = new mongoose.Schema<TUserPreferences>({
-    currency: String,
-    language: String,
-    notificationPreferences: {
-        email: String,
-        sms: String,
-        push: String
+
+const preferencesMongooseSchema = new mongoose.Schema<TUserPreferences>(
+    {
+      language: {
+        type: String,
+        enum: Object.values(ELanguageCode.enum),
+        default: ELanguageCode.enum.en,
+      },
+      currency: {
+        type: String,
+        enum: Object.values(ECurrency.enum),
+        default: ECurrency.enum.USD,
+      },
+      notificationPreferences: {
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+      },
+    },
+    {
+      _id: false,
+      versionKey: false,
     }
-}, {
-    _id: false,
-    versionKey: false,
-})
-const statsMongooseSchema = new mongoose.Schema<TUserStats>({
-    totalOrders: {
-        type: Number,
-        default: 0,
-    },
-    totalSpent: {
-        type: Number,
-        default: 0,
-    },
-    averageOrderValue: {
-        type: Number,
-        default: 0,
-    },
-    favoriteVendors: [
+  );
+  
+  const userStatsMongooseSchema = new mongoose.Schema<TUserStats>(
+    {
+      totalOrders: { type: Number, default: 0 },
+      totalSpent: { type: Number, default: 0 },
+      averageOrderValue: { type: Number, default: 0 },
+      favoriteVendors: [
         {
-            vendorName: {
-                type: String,
-                required: true,
-            },
-            vendorId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: TABLES.Vendor.toString(),
-            },
+          vendorName: { type: String, required: true },
+          vendorId: { type: String, required: true },
         },
-    ],
-    recentlyViewedProducts: [
+      ],
+      recentlyViewedProducts: [
         {
-            productId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: TABLES.Product.toString(),
-            },
-            viewedAt: {
-                type: Date,
-                default: new Date(Date.now()),
-            },
+          productId: { type: String, required: true },
+          viewedAt: { type: Date, default: () => new Date() },
         },
-    ],
-    ordersHistory: [
+      ],
+      ordersHistory: [
         {
-            orderId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: TABLES.Order.toString(),
-            },
-            totalAmount: Number,
-            orderDate: Date,
+          orderId: { type: String, required: true },
+          totalAmount: { type: Number, required: true },
+          orderDate: { type: Date, required: true },
         },
-    ],
-}, {
-    _id: false,
-    versionKey: false,
-    timestamps: false
-});
+      ],
+    },
+    {
+      _id: false,
+      versionKey: false,
+    }
+  );
 
 const userMongoose = new mongoose.Schema<UserDocument>(
     {
@@ -111,8 +102,8 @@ const userMongoose = new mongoose.Schema<UserDocument>(
             accessToken: { type: String, required: false },
             refreshToken: { type: String, required: false },
         },
-        stats: statsMongooseSchema,
-        preferences: preferenceMongooseSchema
+        stats:userStatsMongooseSchema,
+        preferences:preferencesMongooseSchema
     },
     {
         timestamps: true,
@@ -129,7 +120,6 @@ const userMongoose = new mongoose.Schema<UserDocument>(
 
 
 
-validateBeforeSave(userMongoose, UserSchema, TABLES.User.toString())
-
+validateBeforeSave(userMongoose, UserSchema, "User")
 export const UserModel: mongoose.Model<UserDocument> =
-    mongoose.models[TABLES.User.toString()] || mongoose.model<UserDocument>(TABLES.User.toString(), userMongoose);
+    mongoose.models.User || mongoose.model<UserDocument>("User", userMongoose);
