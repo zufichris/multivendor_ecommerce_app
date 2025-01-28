@@ -6,6 +6,7 @@ import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
 import { CreateUserUseCase } from "../../../domain/users/useCases/CreateUser";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
+import { AddressModel } from "../../../data/orm/models/address";
 
 export class AuthMiddleWare {
   constructor(private readonly authUseCase: IAuthUseCaseRepository) {

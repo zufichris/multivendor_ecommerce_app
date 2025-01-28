@@ -1,8 +1,9 @@
 import express from "express";
 import AuthRoutes from "./auth";
 import UserRoutes from "./user";
+import LoggedInUserRoutes from "./me"
 import { authMiddleWare } from "../middleware/auth";
-import { userControllers } from "../controllers/user";
+
 const router = express.Router();
 
 router.get("/", (req, res) => {
@@ -20,6 +21,8 @@ router.use(
   authMiddleWare.requireAuth,
   UserRoutes
 );
-router.use(authMiddleWare.requireAuth).route("/me")
-  .get(userControllers.getMe);
+router.use("/me", 
+  authMiddleWare.requireAuth,
+   LoggedInUserRoutes
+)
 export default router;

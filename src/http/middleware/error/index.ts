@@ -10,6 +10,7 @@ export const notFound = (req: Request, res: Response, next: NextFunction) => {
             message: "Resource Not Found",
             status: EStatusCodes.enum.notFound,
             type: "Invalid path or url",
+            description: 'We Could Not Find What You are Looking For',
             url: req.url,
             path: req.path,
         })
@@ -25,8 +26,8 @@ export const errorHandler = (
     const error: IResponseData<undefined> = {
         success: false,
         message: err?.message ?? "An Unexpected Error Occurred",
-        status: err?.error?.statusCode ?? EStatusCodes.enum.badGateway,
-        description: 'An Unexpected Error Occurred',
+        status: err?.error?.status ?? EStatusCodes.enum.badGateway,
+        description: err?.error?.description ?? 'An Unexpected Error Occurred',
         error: {
             message: err?.message ?? "An Unexpected Error Occurred",
         },
