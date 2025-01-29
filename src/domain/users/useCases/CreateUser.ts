@@ -1,8 +1,8 @@
 import { CreateUserDTO, CreateUserSchema } from "../../../data/dto/user";
-import { TUser, UserSchema } from "../../../data/entities/user";
+import { TUser} from "../../../data/entities/user";
 import { BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
 import { IUserRepository } from "../repositories";
-import { getUnitId, validateData } from "../../../utils/functions";
+import {validateData } from "../../../utils/functions";
 import { EStatusCodes } from "../../../global/enums";
 import { Role } from "../../../data/enums/user";
 
@@ -17,7 +17,6 @@ export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
       if (exists) {
         return handleUseCaseError({ error: "User With Credentials Already Exists", title: "Create User" })
       }
-      const custId = await getUnitId<IUserRepository>(this.userRepository, 'CUST', "User")
       const data = {
         ...validate.data,
         isActive: true,
@@ -25,7 +24,6 @@ export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
         firstName: validate.data.firstName ?? validate.data?.email.split("@")[0],
         roles: [Role.User],
         oauth: validate.data.oauth || null,
-        custId: custId!
       }
       const created = await this.userRepository.create(data)
       if (!created) {

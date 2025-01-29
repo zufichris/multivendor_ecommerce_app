@@ -70,32 +70,58 @@ export function validateBeforeSave(
   });
 }
 
-/**
- * 
- * @param repository The Repository
- * @param prefix  The Prefix of UnitId
- * @param entity  The Entity 
- * @returns   string or null
- */
 
-export async function getUnitId<IRepository extends IBaseRepository<unknown, unknown>>(
-  repository: IRepository,
-  prefix: string,
-  entity: string,
-): Promise<string | null> {
+/**
+ * Generates a unique unit ID with an optional prefix and padding
+ * Example: getUnitId(UserModel, "USR", 4) => "USR0001"
+ * 
+ * @param model - Mongoose model to query
+ * @param key - Key in the document to use for ID generation
+ * @param prefix - Optional prefix for the ID (default: "")
+ * @param padStart - Number of digits to pad the numeric part (default: 4)
+ * @returns Promise with the generated unit ID
+ */
+export async function getUnitId<DocumentType extends mongoose.Document>(
+  model: mongoose.Model<DocumentType>,
+  key: keyof DocumentType,
+  prefix: string = "",
+  padStart: number = 4
+): Promise<string> {
   try {
-    const count = await repository.count()
-    if (!count) {
-      return `${prefix}0001`;
+    if (!model || !key) {
+      throw new Error("Model and key are required parameters");
     }
 
-    const nextNumber = (count + 1).toString().padStart(4, '0');
-    return `${prefix}${nextNumber}`;
+    if (padStart < 1) {
+      throw new Error("padStart must be a positive number");
+    }
+    const latestDocument = await model
+      .findOne({}, { [key]: 1 })
+      .sort({ createdAt: -1 })
+      .lean() as DocumentType | null
+
+    let latestNumber = 0;
+
+    if (latestDocument && latestDocument[key]) {
+      const currentId = latestDocument[key] as string;
+      const matches = currentId.match(/\d+$/);
+      if (matches) {
+        latestNumber = parseInt(matches[0], 10);
+      }
+      if (latestNumber >= Math.pow(10, padStart) - 1) {
+        throw new Error(`ID overflow: Maximum value reached for padding of ${padStart} digits`);
+      }
+    }
+    const newNumber = latestNumber + 1;
+    const paddedNumber = newNumber.toString().padStart(padStart, '0');
+    return `${prefix}${paddedNumber}`;
   } catch (error) {
-    throw new Error(`Error Getting for ${entity}`);
+    if (error instanceof Error) {
+      throw new Error(`Failed to generate unit ID: ${error.message}`);
+    }
+    throw new Error('Failed to generate unit ID: Unknown error');
   }
 }
-
 
 export function getQueryMetaData({ page, filterCount, limit, totalCount }: {
   totalCount: number,

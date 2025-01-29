@@ -1,6 +1,6 @@
 import { UserRepository } from "../../../../domain/users/repositories";
 import { ID, IQueryFilters, IQueryResult } from "../../../../global/entities";
-import { getQueryMetaData, toArray } from "../../../../utils/functions";
+import { getQueryMetaData, getUnitId, toArray } from "../../../../utils/functions";
 import { UserDocument, UserModel } from "../../models/user";
 import { logger } from "../../../../utils/logger";
 import { TUser } from "../../../entities/user";
@@ -20,7 +20,11 @@ export class UserRepositoryImpl implements UserRepository {
             if (!data.email) {
                 throw new Error("Email and password are required");
             }
-            const newUser: UserDocument = await this.userModel.create(data);
+            const custId = await getUnitId<UserDocument>(this.userModel, "custId", "CUST", 4)
+            if (!custId) {
+                throw new Error("Error Getting Customer ID")
+            }
+            const newUser: UserDocument = await this.userModel.create({ ...data, custId });
             return newUser.toJSON() as TUser | null
         } catch (error) {
             logger.error("Error Creating user", { error, data });
