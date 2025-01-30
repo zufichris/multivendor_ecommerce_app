@@ -453,31 +453,55 @@ export class UserControllers {
     })
   }
   private generateUserQuery(query: qs.ParsedQs) {
-    const {
+    let {
       page = 1,
       limit = 10,
+      sort_order = "asc",
+      sort_by = "firstName"
     } =
       query;
-    const filters: IQueryFilters<TUser> = {
-      filter: {
-        isActive: !query.show_inactive ? true : { "$in": [true, false] },
-      },
+    if (sort_by === 'name') {
+      sort_by = 'firstName'
+    }
+    const sortByStr = String(sort_by);
+    const sortOrderStr = String(sort_order);
+    const sort = { [sortByStr]: sortOrderStr === 'desc' ? -1 : 1 }
+    const searchTerm = typeof query.search === 'string' ? query.search : '';
+    const search = searchTerm ? {
+      $or: [
+        { email: { $regex: searchTerm, $options: 'i' } },
+        { firstName: { $regex: searchTerm, $options: 'i' } },
+        { lastName: { $regex: searchTerm, $options: 'i' } }
+      ]
+    } : undefined;
+    const filter = search ?? {
+      isActive: !query.show_inactive ? true : { "$in": [true, false] },
+    }
+
+    const queryOptions = {
+      sort
+    }
+    const projection = {
+      firstName: true,
+      lastName: true,
+      createdAt: true,
+      custId: true,
+      email: true,
+      id: true,
+      phoneNumber: true,
+      profilePictureUrl: true,
+      isActive: true,
+      updatedAt: true
+    }
+
+    const options: IQueryFilters<TUser> = {
+      filter,
       limit: Number(limit ?? 10),
       page: Number(page ?? 1),
-      projection: {
-        firstName: true,
-        lastName: true,
-        createdAt: true,
-        custId: true,
-        email: true,
-        id: true,
-        phoneNumber: true,
-        profilePictureUrl: true,
-        isActive: true,
-        updatedAt: true
-      },
+      projection,
+      queryOptions
     }
-    return filters
+    return options
   }
 }
 const userRepository = new UserRepositoryImpl(UserModel, AddressModel)
