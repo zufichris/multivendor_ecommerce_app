@@ -9,7 +9,7 @@ import { validateData } from "../../../utils/functions";
 import { CreateUserDTO, CreateUserSchema, UpdateUserDTO, UpdateUserSchema } from "../../../data/dto/user";
 import { EStatusCodes } from "../../../global/enums";
 import { IQueryFilters, IResponseData, IResponseDataPaginated } from "../../../global/entities";
-import { TUser, TUserStats } from "../../../data/entities/user";
+import { TUser } from "../../../data/entities/user";
 import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
 import { AddressModel } from "../../../data/orm/models/address";

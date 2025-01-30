@@ -57,14 +57,3 @@ export const EStatusCodes = z.nativeEnum(statusCodes)
 export const ECurrency = z.enum(["USD", "EUR", "GBP", "JPY", "CFA"])
 
 export const ELanguageCode = z.enum(["en", "es", "fr", "de", "ja"]);
-
-export enum TABLES {
-    "User",
-    "UserStat",
-    "Vendor",
-    "Address",
-    "Product",
-    "PaymentMethod",
-    "Order",
-}
-

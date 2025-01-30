@@ -1,11 +1,10 @@
 import mongoose from "mongoose";
-import { TABLES } from "../../../../global/enums";
 import { TAddress } from "../../../entities/address";
 
 export type AddressDocument = TAddress & Document
 const schema = new mongoose.Schema<AddressDocument>(
     {
-        userId: { type: String, ref: TABLES.User.toString(), required: true },
+        userId: { type: String, ref: "User", required: true },
         custId: { type: String, required: true },
         type: { type: String, enum: ["SHIPPING", "BILLING", "BOTH"], default: "BOTH" },
         firstName: { type: String, required: true },
@@ -41,5 +40,5 @@ const schema = new mongoose.Schema<AddressDocument>(
     }
 );
 
-export const AddressModel: mongoose.Model<AddressDocument> = mongoose.models[TABLES.Address.toString()] || mongoose.model<AddressDocument>(TABLES.Address.toString(), schema);
+export const AddressModel: mongoose.Model<AddressDocument> = mongoose.models.Address || mongoose.model<AddressDocument>("Address", schema);
 

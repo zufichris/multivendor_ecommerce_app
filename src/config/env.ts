@@ -15,7 +15,7 @@ const ENVSchema = z.object({
   ),
   mongo_uri: z.string().min(1, {
     message: "Missing MONGO_URI in .env. Required for database.",
-  }).refine((uri) => uri.startsWith("mongodb://") || uri.startsWith("mongodb+srv://"), {
+  }).refine((uri) => uri.startsWith("mongodb://") ?? uri.startsWith("mongodb+srv://"), {
     message: "MONGO_URI must start with 'mongodb://' or 'mongodb+srv://'.",
   }),
   google_callback_url: z.string().url({
@@ -37,17 +37,17 @@ const ENVSchema = z.object({
 
 export type TENV = z.infer<typeof ENVSchema>;
 
-const in_prod = parsed?.NODE_ENV?.toLowerCase()?.includes("prod") || false;
-const url = in_prod ? parsed?.URL_PROD || "" : parsed?.URL_DEV || "";
+const in_prod = parsed?.NODE_ENV?.toLowerCase()?.includes("prod") ?? false;
+const url = in_prod ? parsed?.URL_PROD ?? "" : parsed?.URL_DEV ?? "";
 
 export const env: TENV = {
   in_prod,
-  port: Number(parsed?.PORT || 3000),
-  mongo_uri: parsed?.MONGO_URI || "",
-  google_callback_url: "http://localhost:3000/signin/google",
-  google_client_id: parsed?.GOOGLE_CLIENT_ID || "",
-  google_client_secret: parsed?.GOOGLE_CLIENT_SECRET || "",
-  jwt_secret: parsed?.JWT_SECRET || "",
+  port: Number(parsed?.PORT),
+  mongo_uri: parsed?.MONGO_URI ?? "",
+  google_callback_url: parsed?.GOOGLE_CALLBACK_URL ?? "",
+  google_client_id: parsed?.GOOGLE_CLIENT_ID ?? "",
+  google_client_secret: parsed?.GOOGLE_CLIENT_SECRET ?? "",
+  jwt_secret: parsed?.JWT_SECRET ?? "",
   url,
 };
 
