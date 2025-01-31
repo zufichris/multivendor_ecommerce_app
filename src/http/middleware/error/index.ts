@@ -36,5 +36,6 @@ export const errorHandler = (
         stack: env.in_prod ? undefined : err.stack,
         type: err.error?.type ?? "Error",
     }
+    console.log(err);
     res.status(error.status).json(error);
 };

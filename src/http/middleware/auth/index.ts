@@ -6,7 +6,6 @@ import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
 import { CreateUserUseCase } from "../../../domain/users/useCases/CreateUser";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
-import { AddressModel } from "../../../data/orm/models/address";
 
 export class AuthMiddleWare {
   constructor(private readonly authUseCase: IAuthUseCaseRepository) {
@@ -48,7 +47,7 @@ export class AuthMiddleWare {
   async authorize(allowedRoles: Role[], req: Request, _: Response, next: NextFunction) {
     try {
       const user = req.user;
-      if (!user || !user.id || !user.roles) {
+      if (!user?.id || !user?.roles) {
         throw new AppError({
           message: "User not authenticated",
           type: "Auth Error",
