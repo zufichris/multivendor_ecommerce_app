@@ -3,7 +3,6 @@ import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../global/error";
 import { OAuthProviders } from "../../../data/enums/auth";
 import { GoogleAuthSchema, TGoogleAuthConfig } from "../../../config/google";
-import { CreateUserDTO } from "../../../data/dto/user";
 import { validateData } from "../../../utils/functions";
 import { EStatusCodes } from "../../../global/enums";
 import { env } from "../../../config/env";
@@ -56,8 +55,8 @@ export class GoogleAuthControllers {
 
   private async fetchWithErrorHandling<T>(
     url: string,
-    options: RequestInit = {},
-    errorMessage: string
+    errorMessage: string,
+    options: RequestInit = {}
   ): Promise<T> {
     const response = await fetch(url, options);
     if (!response.ok) {
@@ -65,7 +64,8 @@ export class GoogleAuthControllers {
         message: errorMessage,
         type: "Auth Error",
         details: `HTTP Status: ${response.status}`,
-        statusCode: response.status
+        statusCode: response.status,
+        url
       });
     }
     const data = await response.json();
@@ -131,8 +131,8 @@ export class GoogleAuthControllers {
       const url = `${this.config.tokenAccessUrl}?${query}`;
       const tokens = await this.fetchWithErrorHandling<GoogleTokens>(
         url,
+        "Failed to fetch Google tokens",
         { method: "POST" },
-        "Failed to fetch Google tokens"
       );
       req.body = tokens;
       next();
@@ -157,12 +157,12 @@ export class GoogleAuthControllers {
       const url = `${this.config.profileAccessUrl}?alt=json&access_token=${access_token}`;
       const profile = await this.fetchWithErrorHandling<GoogleProfile>(
         url,
+        "Failed to fetch Google user profile",
         {
           headers: {
             Authorization: `${token_type} ${id_token}`,
           },
-        },
-        "Failed to fetch Google user profile"
+        }
       );
 
       const userData = {
