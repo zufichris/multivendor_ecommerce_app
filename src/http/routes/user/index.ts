@@ -4,7 +4,7 @@ import { authMiddleWare } from "../../middleware/auth";
 import { Role } from "../../../data/enums/user";
 
 const router = express.Router();
-
+router.use(authMiddleWare.requireAuth)
 router.route("/")
   .post(userControllers.createUser)
   .get((req, res, next) => authMiddleWare.authorize([Role.Admin], req, res, next), userControllers.queryUsers);
