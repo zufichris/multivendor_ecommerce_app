@@ -5,7 +5,7 @@ import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../
 import { isAdmin } from "../../../utils/functions";
 import { IVendorRepository } from "../repository";
 
-export class GetVendorsUseCase implements BaseUseCase<IQueryFilters<TVendor>, IQueryResult<TVendor>, AuthContext> {
+export class QueryVendorsUseCase implements BaseUseCase<IQueryFilters<TVendor>, IQueryResult<TVendor>, AuthContext> {
     constructor(private readonly vendorRepository: IVendorRepository) { }
 
     async execute(options?: IQueryFilters<TVendor>, context?: AuthContext): Promise<UseCaseResult<IQueryResult<TVendor>>> {

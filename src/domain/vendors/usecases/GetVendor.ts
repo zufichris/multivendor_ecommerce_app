@@ -3,7 +3,7 @@ import { EStatusCodes } from "../../../global/enums";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
 import { IVendorRepository } from "../repository";
 
-export class GetVendorByIdUseCase implements BaseUseCase<{ id?: string, vendId: string }, TVendor, AuthContext> {
+export class GetVendorUseCase implements BaseUseCase<{ id?: string, vendId: string }, TVendor, AuthContext> {
     constructor(private readonly vendorRepository: IVendorRepository) { }
 
     async execute({ vendId, id }: { id?: string, vendId: string }, context?: AuthContext): Promise<UseCaseResult<TVendor>> {
