@@ -10,6 +10,10 @@ const schema = new mongoose.Schema<VendorDocument>(
         userId: { type: String, ref: "User", required: true },
         businessName: { type: String, required: true, trim: true },
         businessType: { type: String, enum: EBusinessTypes.Enum, default: EBusinessTypes.enum["SOLE PROPRIETOR"] },
+        description:{
+            type:String,
+            minlength:10
+        },
         isVerified: { type: Boolean, default: false },
         verification: {
             type: {

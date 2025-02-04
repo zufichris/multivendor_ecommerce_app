@@ -7,9 +7,10 @@ export const VendorSchema = z.object({
     userId: z.string().min(1, "User ID is required"),
     businessName: z.string().min(2, "Business name is too short"),
     businessType: z.nativeEnum(EBusinessTypes.enum).default(EBusinessTypes.enum["SOLE PROPRIETOR"]),
-
+    description: z.string().min(10, {
+        message: "Description cannot be less than 10 characters"
+    }),
     isVerified: z.boolean().default(false),
-
     verification: z
         .object({
             documentType: z.nativeEnum(EVerificationTypes.enum),
