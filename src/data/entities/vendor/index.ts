@@ -3,8 +3,8 @@ import { EBusinessTypes, EVerificationTypes } from "../../enums/vendor";
 
 export const VendorSchema = z.object({
     id: z.string().optional(),
-    vendId: z.string().uuid(),
-    userId: z.string().min(1, "User ID is required"),
+    userId: z.string(),
+    vendId: z.string().optional(),
     businessName: z.string().min(2, "Business name is too short"),
     businessType: z.nativeEnum(EBusinessTypes.enum).default(EBusinessTypes.enum["SOLE PROPRIETOR"]),
     description: z.string().min(10, {
@@ -13,11 +13,11 @@ export const VendorSchema = z.object({
     isVerified: z.boolean().default(false),
     verification: z
         .object({
-            documentType: z.nativeEnum(EVerificationTypes.enum),
+            documentType: z.nativeEnum(EVerificationTypes.enum).nullable().optional(),
             status: z.enum(["APPROVED", "PENDING", "REJECTED"]).default("PENDING"),
-            reason: z.string().optional(),
-            documentUrls: z.array(z.string().url()).optional(),
-        })
+            reason: z.string().nullable().optional(),
+            documentUrls: z.array(z.string().url()).optional().default([]),
+        }).nullable()
         .optional(),
 
     payoutMethod: z.string().min(1, "Payout method is required"),

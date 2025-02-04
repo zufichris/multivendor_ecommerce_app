@@ -1,16 +1,19 @@
-import { TVendor, VendorSchema } from "../../../data/entities/vendor";
-import { BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
-import { validateData } from "../../../utils/functions";
+import { TVendor } from "../../../data/entities/vendor";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { isAdmin, isVendor, validateData } from "../../../utils/functions";
 import { EStatusCodes } from "../../../global/enums";
 import { IVendorRepository } from "../repository";
 import { UpdateVendorDTO } from "../../../data/dto/vendor";
 import { UpdateUserSchema } from "../../../data/dto/user";
 
-export class UpdateVendorUseCase implements BaseUseCase<{ id: string, data: Partial<UpdateVendorDTO> }, TVendor> {
+export class UpdateVendorUseCase implements BaseUseCase<{ id: string, data: Partial<UpdateVendorDTO> }, TVendor, AuthContext> {
     constructor(private readonly vendorRepository: IVendorRepository) { }
 
-    async execute(input: { id: string, data: Partial<UpdateVendorDTO> }, context?: void | undefined): Promise<UseCaseResult<TVendor>> {
+    async execute(input: { id: string, data: Partial<UpdateVendorDTO> }, context: AuthContext): Promise<UseCaseResult<TVendor>> {
         try {
+            if (!isAdmin(context.roles) || !!isVendor(context.roles)) {
+                return handleUseCaseError({ title: "Forbidden", error: "Unauthorized", status: EStatusCodes.enum.forbidden })
+            }
             const { id, data } = input;
             const validate = validateData<UpdateVendorDTO>(data, UpdateUserSchema);
             if (!validate.success) {
