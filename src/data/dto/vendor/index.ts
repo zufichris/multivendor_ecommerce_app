@@ -9,10 +9,11 @@ export const CreateVendorSchema = VendorSchema.pick({
     userId: true,
     verification: true,
 })
-const UpdateVendorSchema = VendorSchema.pick
+export const UpdateVendorSchema = VendorSchema.pick
     ({
         businessName: true,
         description: true,
+        storefront:true
     })
 
 export type CreateVendorDTO = z.infer<typeof CreateVendorSchema>
