@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-import z, { string, unknown } from "zod";
-import { IBaseRepository } from "../global/repository";
+import z from "zod";
 import { logger } from "./logger";
 import { Role } from "../data/enums/user";
 
