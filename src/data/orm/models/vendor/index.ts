@@ -55,7 +55,17 @@ const schema = new mongoose.Schema<VendorDocument>(
         updatedAt: { type: Date, default: Date.now },
         lastActiveAt: { type: Date, default: null },
     },
-    { timestamps: true }
+    {
+        timestamps: true,
+        toJSON: {
+            versionKey: false,
+            virtuals: true,
+            transform: (c) => {
+                delete c._id
+                return c
+            }
+        }
+    }
 );
 
 export const VendorModel: mongoose.Model<VendorDocument> = mongoose.models.Vendor || mongoose.model<VendorDocument>("Vendor", schema);
