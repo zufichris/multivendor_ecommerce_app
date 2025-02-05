@@ -174,7 +174,7 @@ export function isAdmin(role: unknown): boolean {
  * @returns boolean indicating if role is Vendor
  */
 export function isVendor(role: unknown): boolean {
-  return Array.isArray(role)
+  return (Array.isArray(role)
     ? role.includes(Role.Vendor)
-    : role === Role.Vendor;
+    : role === Role.Vendor) || isAdmin(role)
 }
