@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { EBusinessTypes, EVerificationTypes } from "../../../enums/vendor"
-import { TVendor } from "../../../entities/vendor"
+import { TVendor, VendorSchema } from "../../../entities/vendor"
+import { validateBeforeSave } from "../../../../utils/functions";
 
 export type VendorDocument = TVendor & mongoose.Document
 
@@ -10,9 +11,13 @@ const schema = new mongoose.Schema<VendorDocument>(
         userId: { type: String, ref: "User", required: true },
         businessName: { type: String, required: true, trim: true },
         businessType: { type: String, enum: EBusinessTypes.Enum, default: EBusinessTypes.enum["SOLE PROPRIETOR"] },
-        description:{
-            type:String,
-            minlength:10
+        slug: {
+            type: String,
+            required: true
+        },
+        description: {
+            type: String,
+            minlength: 10
         },
         isVerified: { type: Boolean, default: false },
         verification: {
@@ -71,5 +76,6 @@ const schema = new mongoose.Schema<VendorDocument>(
         }
     }
 );
+validateBeforeSave(schema, VendorSchema, "Vendor")
 
 export const VendorModel: mongoose.Model<VendorDocument> = mongoose.models.Vendor || mongoose.model<VendorDocument>("Vendor", schema);

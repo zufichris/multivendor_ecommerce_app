@@ -11,10 +11,11 @@ export class VendorRepositoryImpl implements VendorRepository {
     async create(data: Partial<TVendor>): Promise<TVendor | null> {
         try {
             const vendId = await getUnitId<VendorDocument>(this.vendorModel, "vendId", "VEND", 4)
+            const slug = data.businessName?.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-')
             if (!vendId) {
                 throw new Error("Error Getting Vendor ID")
             }
-            const newVendor = await this.vendorModel.create({ ...data, vendId });
+            const newVendor = await this.vendorModel.create({ ...data, vendId, slug });
             return newVendor.toJSON() as TVendor;
         } catch (error) {
             logger.error("Error Creating Vendor", { error, data });

@@ -4,9 +4,10 @@ import { EBusinessTypes, EVerificationTypes } from "../../enums/vendor";
 export const VendorSchema = z.object({
     id: z.string().optional(),
     userId: z.string(),
-    vendId: z.string().optional(),
+    vendId: z.string(),
     businessName: z.string().min(2, "Business name is too short"),
     businessType: z.nativeEnum(EBusinessTypes.enum).default(EBusinessTypes.enum["SOLE PROPRIETOR"]),
+    slug: z.string(),
     description: z.string().min(10, {
         message: "Description cannot be less than 10 characters"
     }),
