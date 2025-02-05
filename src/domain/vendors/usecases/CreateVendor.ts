@@ -1,5 +1,5 @@
 import { TVendor } from "../../../data/entities/vendor";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { validateData } from "../../../utils/functions";
 import { EStatusCodes } from "../../../global/enums";
 import { EBusinessTypes } from "../../../data/enums/vendor";

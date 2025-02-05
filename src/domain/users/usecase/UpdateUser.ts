@@ -1,6 +1,6 @@
 import { TUser } from "../../../data/entities/user";
 import { UpdateUserDTO, UpdateUserSchema } from "../../../data/dto/user";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { IUserRepository } from "../repositories";
 import { validateData } from "../../../utils/functions";
 import { EStatusCodes } from "../../../global/enums";

@@ -4,11 +4,11 @@ import { CreateUserDTO, CreateUserSchema, SignInDTO, SocialSignInDTO, SocialSign
 import { TUser } from "../../../data/entities/user";
 import { ID } from "../../../global/entities";
 import { EStatusCodes } from "../../../global/enums";
-import { handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { validateData } from "../../../utils/functions";
 import { logger } from "../../../utils/logger";
 import { IUserRepository } from "../../users/repositories";
-import { CreateUserUseCase } from "../../users/useCases/CreateUser";
+import { CreateUserUseCase } from "../../users/usecase/CreateUser";
 import { AutUseCaseRepository, TokenPair } from "../repository";
 import { env } from '../../../config/env';
 

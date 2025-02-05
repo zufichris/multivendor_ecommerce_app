@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { CreateUserUseCase } from "../../../domain/users/useCases/CreateUser";
-import { QueryUsersUseCase } from "../../../domain/users/useCases/QueryUsers";
-import { GetUserUseCase } from "../../../domain/users/useCases/GetUser";
-import { ChangeUserStatusUseCase } from "../../../domain/users/useCases/ChangeUserStatus";
-import { ChangeUserRoleUseCase } from "../../../domain/users/useCases/ChangeUserRole";
-import { UpdateUserUseCase } from "../../../domain/users/useCases/UpdateUser";
+import { CreateUserUseCase } from "../../../domain/users/usecase/CreateUser";
+import { QueryUsersUseCase } from "../../../domain/users/usecase/QueryUsers";
+import { GetUserUseCase } from "../../../domain/users/usecase/GetUser";
+import { ChangeUserStatusUseCase } from "../../../domain/users/usecase/ChangeUserStatus";
+import { ChangeUserRoleUseCase } from "../../../domain/users/usecase/ChangeUserRole";
+import { UpdateUserUseCase } from "../../../domain/users/usecase/UpdateUser";
 import { validateData } from "../../../utils/functions";
 import { CreateUserDTO, CreateUserSchema, UpdateUserDTO, UpdateUserSchema } from "../../../data/dto/user";
 import { EStatusCodes } from "../../../global/enums";
@@ -13,7 +13,7 @@ import { TUser } from "../../../data/entities/user";
 import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
 import { AddressModel } from "../../../data/orm/models/address";
-import { AddAddressUseCase, GetAddressesUseCase, UpdateAddressUseCase } from "../../../domain/users/useCases/Addresses";
+import { AddAddressUseCase, GetAddressesUseCase, UpdateAddressUseCase } from "../../../domain/users/usecase/Addresses";
 import { AddressSchema, TAddress } from "../../../data/entities/address";
 
 export class UserControllers {

@@ -2,7 +2,7 @@ import { TUser } from "../../../data/entities/user";
 import { Role } from "../../../data/enums/user";
 import { IQueryFilters, IQueryResult } from "../../../global/entities";
 import { EStatusCodes } from "../../../global/enums";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { IUserRepository } from "../repositories";
 
 export class QueryUsersUseCase implements BaseUseCase<IQueryFilters<TUser>, IQueryResult<TUser> & {

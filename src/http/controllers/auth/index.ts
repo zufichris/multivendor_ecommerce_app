@@ -1,6 +1,6 @@
 import { Response, Request, NextFunction, CookieOptions } from "express";
 import { GoogleAuthConfig } from "../../../config/google";
-import { AuthUseCase } from "../../../domain/auth/useCases/AuthUseCase";
+import { AuthUseCase } from "../../../domain/auth/usecase/AuthUseCase";
 import { GoogleAuthControllers } from "./GoogleAuth";
 import { CreateUserSchema, SignInDTO, SignInSchema, SocialSignInDTO, SocialSignInSchema } from "../../../data/dto/user";
 import { validateData } from "../../../utils/functions";
@@ -9,9 +9,8 @@ import { IResponseData } from "../../../global/entities";
 import { TUser } from "../../../data/entities/user";
 import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
-import { CreateUserUseCase } from "../../../domain/users/useCases/CreateUser";
+import { CreateUserUseCase } from "../../../domain/users/usecase/CreateUser";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
-import { AddressModel } from "../../../data/orm/models/address";
 
 export class AuthControllers {
   public googleAuthControllers = new GoogleAuthControllers(GoogleAuthConfig);

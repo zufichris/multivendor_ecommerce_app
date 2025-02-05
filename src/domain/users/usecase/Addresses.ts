@@ -2,7 +2,7 @@ import { AddressSchema, TAddress } from "../../../data/entities/address";
 import { Role } from "../../../data/enums/user";
 import { IQueryFilters, IQueryResult } from "../../../global/entities";
 import { EStatusCodes } from "../../../global/enums";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { validateData } from "../../../utils/functions";
 import { logger } from "../../../utils/logger";
 import { IUserRepository } from "../repositories";

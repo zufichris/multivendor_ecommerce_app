@@ -1,5 +1,5 @@
 import { EStatusCodes } from "../../../global/enums";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { IVendorRepository } from "../repository";
 
 export class DeleteVendorUseCase implements BaseUseCase<string, boolean, AuthContext> {

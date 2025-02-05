@@ -1,6 +1,6 @@
 import { TVendor } from "../../../data/entities/vendor";
 import { EStatusCodes } from "../../../global/enums";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { IVendorRepository } from "../repository";
 
 export class GetVendorUseCase implements BaseUseCase<{ id?: string, vendId: string }, TVendor, AuthContext> {

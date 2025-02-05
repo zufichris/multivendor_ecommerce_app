@@ -1,5 +1,5 @@
 import { EStatusCodes } from "../../../global/enums";
-import { BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { IVendorRepository } from "../repository";
 
 export class GetVendorStatsUseCase implements BaseUseCase<string, { totalSales: number, returnRate: number, orders: number }> {

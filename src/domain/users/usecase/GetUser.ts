@@ -1,5 +1,5 @@
 import { TUser } from "../../../data/entities/user";
-import { BaseUseCase, UseCaseResult, handleUseCaseError, AuthContext } from "../../../global/useCase";
+import { BaseUseCase, UseCaseResult, handleUseCaseError, AuthContext } from "../../../global/usecase";
 import { IUserRepository } from "../repositories";
 import { EStatusCodes } from "../../../global/enums";
 import { Role } from "../../../data/enums/user";

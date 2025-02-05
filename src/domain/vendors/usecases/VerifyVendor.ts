@@ -1,6 +1,6 @@
 import { TVendor } from "../../../data/entities/vendor";
 import { EStatusCodes } from "../../../global/enums";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { isAdmin } from "../../../utils/functions";
 import { IVendorRepository } from "../repository";
 

@@ -1,7 +1,7 @@
 import { TProduct } from "../../../data/entities/product";
 import { IQueryFilters, IQueryResult } from "../../../global/entities";
 import { EStatusCodes } from "../../../global/enums";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { isVendor } from "../../../utils/functions";
 import { IProductRepository } from "../repository";
 

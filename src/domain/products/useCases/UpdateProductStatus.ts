@@ -1,6 +1,6 @@
 import { EProductStatus, TProduct } from "../../../data/entities/product";
 import { EStatusCodes } from "../../../global/enums";
-import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/useCase";
+import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { isVendor } from "../../../utils/functions";
 import { IProductRepository } from "../repository";
 
