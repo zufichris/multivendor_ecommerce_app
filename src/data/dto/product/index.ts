@@ -1,6 +1,7 @@
+import { z } from "zod"
 import { ProductSchema } from "../../entities/product";
 
-export const CreateProductDTO = ProductSchema.pick({
+export const CreateProductSchema = ProductSchema.pick({
     vendorId: true,
     name: true,
     slug: true,
@@ -35,7 +36,7 @@ export const CreateProductDTO = ProductSchema.pick({
     isLimitedEdition: true,
 })
 
-export const UpdateProductDTO = ProductSchema.pick({
+export const UpdateProductSchema = ProductSchema.pick({
     vendorId: true,
     name: true,
     slug: true,
@@ -69,3 +70,6 @@ export const UpdateProductDTO = ProductSchema.pick({
     isBestSeller: true,
     isLimitedEdition: true,
 }).partial();
+
+export type CreateProductDTO = z.infer<typeof CreateProductSchema>
+export type UpdateProductDTO = z.infer<typeof UpdateProductSchema>
