@@ -4,10 +4,10 @@ import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../
 import { isVendor } from "../../../utils/functions";
 import { IProductRepository } from "../repository";
 
-export class CreateProductUseCase implements BaseUseCase<Partial<TProduct>, TProduct | null, AuthContext> {
+export class CreateProductUseCase implements BaseUseCase<Partial<TProduct>, TProduct, AuthContext> {
     constructor(private readonly productRepository: IProductRepository) { }
 
-    async execute(input: Partial<TProduct>, context?: AuthContext): Promise<UseCaseResult<TProduct | null>> {
+    async execute(input: Partial<TProduct>, context?: AuthContext): Promise<UseCaseResult<TProduct>> {
         try {
             if (!isVendor(context?.roles)) {
                 return handleUseCaseError({ error: "Unauthorized", title: "Create Product", status: EStatusCodes.enum.forbidden });

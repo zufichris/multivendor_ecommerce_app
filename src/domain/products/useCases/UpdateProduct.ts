@@ -7,7 +7,7 @@ import { IProductRepository } from "../repository";
 export class UpdateProductUseCase implements BaseUseCase<{ id: string; data: Partial<TProduct> }, TProduct | null, AuthContext> {
     constructor(private readonly productRepository: IProductRepository) { }
 
-    async execute(input: { id: string; data: Partial<TProduct> }, context?: AuthContext): Promise<UseCaseResult<TProduct | null>> {
+    async execute(input: { id: string; data: Partial<TProduct> }, context?: AuthContext): Promise<UseCaseResult<TProduct>> {
         try {
             if (!isVendor(context?.roles)) {
                 return handleUseCaseError({ error: "Unauthorized", title: "Update Product", status: EStatusCodes.enum.forbidden });
