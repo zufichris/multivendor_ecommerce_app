@@ -4,7 +4,7 @@ import { Role } from "../../../data/enums/user";
 import { AuthUseCase } from "../../../domain/auth/usecase/AuthUseCase";
 import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
-import { CreateUserUseCase } from "../../../domain/users/usecase/CreateUser";
+import { CreateUserUseCase } from "../../../domain/users/usecases/CreateUser";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
 
 export class AuthMiddleWare {

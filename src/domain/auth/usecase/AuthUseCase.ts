@@ -8,7 +8,7 @@ import { handleUseCaseError, UseCaseResult } from "../../../global/usecase";
 import { validateData } from "../../../utils/functions";
 import { logger } from "../../../utils/logger";
 import { IUserRepository } from "../../users/repositories";
-import { CreateUserUseCase } from "../../users/usecase/CreateUser";
+import { CreateUserUseCase } from "../../users/usecases/CreateUser";
 import { AutUseCaseRepository, TokenPair } from "../repository";
 import { env } from '../../../config/env';
 

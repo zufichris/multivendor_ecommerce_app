@@ -9,7 +9,7 @@ import { IResponseData } from "../../../global/entities";
 import { TUser } from "../../../data/entities/user";
 import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
 import { UserModel } from "../../../data/orm/models/user";
-import { CreateUserUseCase } from "../../../domain/users/usecase/CreateUser";
+import { CreateUserUseCase } from "../../../domain/users/usecases/CreateUser";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
 
 export class AuthControllers {
