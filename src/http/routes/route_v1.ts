@@ -17,6 +17,6 @@ router.use("/auth", AuthRoutes);
 router.use("/users", UserRoutes);
 router.use("/me", LoggedInUserRoutes)
 router.use("/vendors", VendorRoutes)
-router.use("/product", ProductRoutes)
+router.use("/products", ProductRoutes)
 
 export default router;
