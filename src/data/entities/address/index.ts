@@ -20,7 +20,9 @@ export const AddressSchema = z.object({
     state: z.string().min(1),
     postalCode: z.string().min(1),
     country: z.string().length(2),
-    phone: z.string(),
+    phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, {
+        message: "Invalid Phone Number"
+    }),
     email: z.string().email().optional(),
     isDefault: z.boolean().default(false),
     isDefaultBilling: z.boolean().default(false),
