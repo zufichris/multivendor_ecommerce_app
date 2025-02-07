@@ -54,7 +54,7 @@ export function validateData<T>(
  */
 export function validateBeforeSave(
   mongooseSchema: mongoose.Schema,
-  zodSchema: z.ZodObject<any>,
+  zodSchema: z.ZodObject<any> | z.ZodEffects<any>,
   name: string
 ) {
   logger.info(`Validating ${name} Before Saving....`)
