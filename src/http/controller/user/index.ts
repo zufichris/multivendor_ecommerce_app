@@ -1,10 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { CreateUserUseCase } from "../../../domain/user/use-case/create-user";
-import { QueryUsersUseCase } from "../../../domain/user/use-case/query-users";
-import { GetUserUseCase } from "../../../domain/user/use-case/get-user";
-import { ChangeUserStatusUseCase } from "../../../domain/user/use-case/change-user-status";
-import { ChangeUserRoleUseCase } from "../../../domain/user/use-case/change-user-role";
-import { UpdateUserUseCase } from "../../../domain/user/use-case/update-user";
 import { validateData } from "../../../util/functions";
 import { CreateUserDTO, CreateUserSchema, UpdateUserDTO, UpdateUserSchema } from "../../../data/dto/user";
 import { EStatusCodes } from "../../../global/enum";
@@ -13,20 +7,12 @@ import { TUser } from "../../../data/entity/user";
 import { UserRepositoryImpl } from "../../../data/orm/repository-implementation/user";
 import { UserModel } from "../../../data/orm/model/user";
 import { AddressModel } from "../../../data/orm/model/address";
-import { AddAddressUseCase, GetAddressesUseCase, UpdateAddressUseCase } from "../../../domain/user/use-case/address-use-case";
 import { AddressSchema, TAddress } from "../../../data/entity/address";
+import UserUseCase from "../../../domain/user/use-case";
 
 export class UserControllers {
   constructor(
-    private readonly createUseCase: CreateUserUseCase,
-    private readonly queryCase: QueryUsersUseCase,
-    private readonly getCase: GetUserUseCase,
-    private readonly changeStatusCase: ChangeUserStatusUseCase,
-    private readonly changeRoleCase: ChangeUserRoleUseCase,
-    private readonly updateCase: UpdateUserUseCase,
-    private readonly addAddressCase: AddAddressUseCase,
-    private readonly updateAddressCase: UpdateAddressUseCase,
-    private readonly getAddressesCase: GetAddressesUseCase
+    private readonly userUseCase: UserUseCase,
   ) {
     this.queryUsers = this.queryUsers.bind(this)
     this.createUser = this.createUser.bind(this)
@@ -71,7 +57,7 @@ export class UserControllers {
         return
       }
 
-      const result = await this.createUseCase.execute(validate.data);
+      const result = await this.userUseCase.create.execute(validate.data);
       if (!result.success) {
         const data = {
           ...this.generateMetadata(req, result.error),
@@ -98,7 +84,7 @@ export class UserControllers {
   async queryUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const query = this.generateUserQuery(req.query)
-      const result = await this.queryCase.execute(query, {
+      const result = await this.userUseCase.query.execute(query, {
         roles: req.user?.roles!,
         userId: req.user?.id!
       });
@@ -126,7 +112,7 @@ export class UserControllers {
   async getUser(req: Request, res: Response, next: NextFunction) {
     try {
       const custId = req.params.custId;
-      const result = await this.getCase.execute({ custId }, { roles: req.user?.roles!, userId: req.user?.id! });
+      const result = await this.userUseCase.get.execute({ custId }, { roles: req.user?.roles!, userId: req.user?.id! });
       if (!result.success) {
         const data = {
           ...this.generateMetadata(req, result.error ?? "User Not Found"),
@@ -164,7 +150,7 @@ export class UserControllers {
         return
       }
 
-      const result = await this.updateCase.execute(validate.data, {
+      const result = await this.userUseCase.update.execute(validate.data, {
         roles: req.user?.roles!,
         userId: req.user?.id!
       });
@@ -192,7 +178,7 @@ export class UserControllers {
   async changeUserStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const toChangeId = req.params.userId
-      const result = await this.changeStatusCase.execute({
+      const result = await this.userUseCase.changeStatus.execute({
         userId: toChangeId,
         isActive: true
       }, {
@@ -228,7 +214,7 @@ export class UserControllers {
       const userId = req.params.userId;
       const role = req.body.role;
 
-      const result = await this.changeRoleCase.execute({ userId, roles: role }, {
+      const result = await this.userUseCase.changeRole.execute({ userId, roles: role }, {
         userId: req.user?.id!,
         roles: req.user?.roles!
       });
@@ -273,7 +259,7 @@ export class UserControllers {
       if (!filter.type)
         delete filter.type
 
-      const result = await this.getAddressesCase.execute({
+      const result = await this.userUseCase.getAddresses.execute({
         filter
       });
       if (!result.success) {
@@ -310,7 +296,7 @@ export class UserControllers {
         return;
       }
 
-      const result = await this.updateAddressCase.execute(validate.data);
+      const result = await this.userUseCase.updateAddress.execute(validate.data);
       if (!result.success) {
         const data = {
           ...this.generateMetadata(req, result.error ?? "Failed to update address"),
@@ -345,7 +331,7 @@ export class UserControllers {
         return;
       }
 
-      const result = await this.addAddressCase.execute(validate.data);
+      const result = await this.userUseCase.addAddress.execute(validate.data);
       if (!result.success) {
         const data = {
           ...this.generateMetadata(req, result.error ?? "Failed to add address"),
@@ -406,7 +392,7 @@ export class UserControllers {
         res.status(data.status).json(data);
         return;
       }
-      const result = await this.getCase.execute({ custId: custId.toString() }, {
+      const result = await this.userUseCase.get.execute({ custId: custId.toString() }, {
         roles: req.user?.roles!,
         userId: req.user?.id!
       });
@@ -504,14 +490,5 @@ export class UserControllers {
     return options
   }
 }
-const userRepository = new UserRepositoryImpl(UserModel, AddressModel)
-export const userControllers = new UserControllers(
-  new CreateUserUseCase(userRepository),
-  new QueryUsersUseCase(userRepository),
-  new GetUserUseCase(userRepository),
-  new ChangeUserStatusUseCase(userRepository),
-  new ChangeUserRoleUseCase(userRepository),
-  new UpdateUserUseCase(userRepository),
-  new AddAddressUseCase(userRepository),
-  new UpdateAddressUseCase(userRepository),
-  new GetAddressesUseCase(userRepository))
+
+export const userControllers = new UserControllers(new UserUseCase(new UserRepositoryImpl(UserModel, AddressModel)))
