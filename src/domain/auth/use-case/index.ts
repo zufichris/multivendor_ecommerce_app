@@ -13,7 +13,7 @@ import { AutUseCaseRepository, TokenPair } from "../repository";
 import { env } from '../../../config/env';
 
 
-export class AuthUseCase extends AutUseCaseRepository {
+export default class AuthUseCase extends AutUseCaseRepository {
   constructor(private readonly userRepository: IUserRepository, private readonly createNewUser: CreateUserUseCase) {
     super()
     this.signUp = this.signUp.bind(this);

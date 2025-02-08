@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../../global/error";
 import { Role } from "../../../data/enum/user";
-import { AuthUseCase } from "../../../domain/auth/use-case/auth-use-case";
+import AuthUseCase from "../../../domain/auth/use-case";
 import { UserRepositoryImpl } from "../../../data/orm/repository-implementation/user";
 import { UserModel } from "../../../data/orm/model/user";
 import { CreateUserUseCase } from "../../../domain/user/use-case/create-user";

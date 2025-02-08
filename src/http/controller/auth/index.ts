@@ -1,6 +1,6 @@
 import { Response, Request, NextFunction, CookieOptions } from "express";
 import { GoogleAuthConfig } from "../../../config/google";
-import { AuthUseCase } from "../../../domain/auth/use-case/auth-use-case";
+import  AuthUseCase  from "../../../domain/auth/use-case";
 import { GoogleAuthControllers } from "./GoogleAuth";
 import { CreateUserSchema, SignInDTO, SignInSchema, SocialSignInDTO, SocialSignInSchema } from "../../../data/dto/user";
 import { validateData } from "../../../util/functions";
