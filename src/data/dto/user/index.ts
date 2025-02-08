@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UserSchema } from "../../entities/user";
+import { UserSchema } from "../../entity/user";
 
 export const CreateUserSchema = UserSchema.pick({
     email: true,

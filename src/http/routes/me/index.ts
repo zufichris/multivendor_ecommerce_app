@@ -1,6 +1,6 @@
 import express from "express"
 import { authMiddleWare } from "../../middleware/auth"
-import { userControllers } from "../../controllers/user"
+import { userControllers } from "../../controller/user"
 const router = express.Router()
 router.use(authMiddleWare.requireAuth,)
 router.use(authMiddleWare.requireAuth)
@@ -10,8 +10,8 @@ router.route('/')
     .patch(userControllers.updateUser)
 
 router.route('/address')
-    .get(userControllers.  getMeAddress)
-    .post(userControllers. addMeAddress)
+    .get(userControllers.getMeAddress)
+    .post(userControllers.addMeAddress)
     .patch(userControllers.updateMeAddress)
 router.route('/stats')
     .get(userControllers.getMeStats)

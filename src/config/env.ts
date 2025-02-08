@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
-import { logger } from "../utils/logger";
+import { logger } from "../util/logger";
 import { z } from "zod";
-import { validateData } from "../utils/functions";
+import { validateData } from "../util/functions";
 
 const { error, parsed } = dotenv.config();
 

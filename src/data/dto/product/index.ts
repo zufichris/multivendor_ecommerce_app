@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { ProductSchema } from "../../entities/product";
+import { ProductSchema } from "../../entity/product";
 
 export const CreateProductSchema = ProductSchema.pick({
     vendorId: true,

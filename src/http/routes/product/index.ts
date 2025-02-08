@@ -1,5 +1,5 @@
 import express from "express"
-import { productControllers } from "../../controllers/product"
+import { productControllers } from "../../controller/product"
 const router = express.Router()
 router.route("/")
     .get(productControllers.queryProducts)
@@ -12,4 +12,4 @@ router.route("/:id")
     .patch(productControllers.updateProductStatus)
     .delete(productControllers.deleteProduct)
 
-    export default router
+export default router
