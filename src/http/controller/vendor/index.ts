@@ -1,26 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { VendorRepositoryImpl } from "../../../data/orm/repository-implementation/vendor";
 import { VendorModel } from "../../../data/orm/model/vendor";
-import { CreateVendorUseCase } from "../../../domain/vendor/use-case/create-vendor";
-import { QueryVendorsUseCase } from "../../../domain/vendor/use-case/query-vendors";
-import { GetVendorUseCase } from "../../../domain/vendor/use-case/get-vendor";
-import { UpdateVendorUseCase } from "../../../domain/vendor/use-case/update-vendor-profile";
-import { VerifyVendorUseCase } from "../../../domain/vendor/use-case/verify-vendor";
-import { DeleteVendorUseCase } from "../../../domain/vendor/use-case/delete-vendor";
 import { validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { TVendor } from "../../../data/entity/vendor";
 import { IQueryFilters, IResponseData, IResponseDataPaginated } from "../../../global/entity";
 import { CreateVendorDTO, CreateVendorSchema, UpdateVendorDTO, UpdateVendorSchema } from "../../../data/dto/vendor";
+import VendorUseCase from "../../../domain/vendor/use-case";
 
 export class VendorControllers {
     constructor(
-        private readonly createUseCase: CreateVendorUseCase,
-        private readonly queryCase: QueryVendorsUseCase,
-        private readonly getCase: GetVendorUseCase,
-        private readonly updateProfileCase: UpdateVendorUseCase,
-        private readonly verifyCase: VerifyVendorUseCase,
-        private readonly deleteCase: DeleteVendorUseCase
+        private readonly vendorUseCase: VendorUseCase
     ) {
         this.createVendor = this.createVendor.bind(this);
         this.getVendor = this.getVendor.bind(this);
@@ -44,7 +34,7 @@ export class VendorControllers {
                 return;
             }
 
-            const result = await this.createUseCase.execute(validate.data, {
+            const result = await this.vendorUseCase.create.execute(validate.data, {
                 userId: req.user?.id!,
                 roles: req.user?.roles!
             });
@@ -83,7 +73,7 @@ export class VendorControllers {
                 return;
             }
 
-            const result = await this.getCase.execute({ vendId: vendorId }, { roles: req.user?.roles!, userId: req.user?.id! });
+            const result = await this.vendorUseCase.get.execute({ vendId: vendorId }, { roles: req.user?.roles!, userId: req.user?.id! });
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Vendor Not Found"),
@@ -109,7 +99,7 @@ export class VendorControllers {
     async queryVendors(req: Request, res: Response, next: NextFunction) {
         try {
             const query = this.generateVendorQuery(req.query)
-            const result = await this.queryCase.execute(query);
+            const result = await this.vendorUseCase.query.execute(query);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Failed to retrieve vendors"),
@@ -146,7 +136,7 @@ export class VendorControllers {
                 return;
             }
 
-            const result = await this.updateProfileCase.execute({
+            const result = await this.vendorUseCase.updateProfile.execute({
                 data: req.body,
                 id: req.body.id
             }, {
@@ -181,7 +171,7 @@ export class VendorControllers {
             const status = req.body.status;
             const reason = req.body.reason;
 
-            const result = await this.verifyCase.execute({ id: vendorId, status, reason });
+            const result = await this.vendorUseCase.verify.execute({ id: vendorId, status, reason });
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Failed to change vendor status"),
@@ -207,7 +197,7 @@ export class VendorControllers {
     async deleteVendor(req: Request, res: Response, next: NextFunction) {
         try {
             const vendorId = req.params.vendorId;
-            const result = await this.deleteCase.execute(vendorId, { userId: req?.user?.id!, roles: req?.user?.roles! })
+            const result = await this.vendorUseCase.delete.execute(vendorId, { userId: req?.user?.id!, roles: req?.user?.roles! })
 
             if (!result.success) {
                 const data = {
@@ -293,12 +283,4 @@ export class VendorControllers {
 }
 
 
-const vendorRepository = new VendorRepositoryImpl(VendorModel);
-export const vendorControllers = new VendorControllers(
-    new CreateVendorUseCase(vendorRepository),
-    new QueryVendorsUseCase(vendorRepository),
-    new GetVendorUseCase(vendorRepository),
-    new UpdateVendorUseCase(vendorRepository),
-    new VerifyVendorUseCase(vendorRepository),
-    new DeleteVendorUseCase(vendorRepository)
-);
+export const vendorControllers = new VendorControllers(new VendorUseCase(new VendorRepositoryImpl(VendorModel)));
