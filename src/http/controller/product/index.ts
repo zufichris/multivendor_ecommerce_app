@@ -1,26 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import { ProductRepositoryImpl } from "../../../data/orm/repository-implementation/product";
 import { ProductModel } from "../../../data/orm/model/product";
-import { CreateProductUseCase } from "../../../domain/product/use-case/create-product";
-import { QueryProductsUseCase } from "../../../domain/product/use-case/query-products";
-import { GetProductUseCase } from "../../../domain/product/use-case/get-product";
-import { UpdateProductUseCase } from "../../../domain/product/use-case/update-product";
-import { UpdateProductStatusUseCase } from "../../../domain/product/use-case/update-product-status";
-import { DeleteProductUseCase } from "../../../domain/product/use-case/delete-product";
 import { validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { TProduct } from "../../../data/entity/product";
 import { IQueryFilters, IResponseData, IResponseDataPaginated } from "../../../global/entity";
 import { CreateProductDTO, UpdateProductDTO, CreateProductSchema, UpdateProductSchema } from "../../../data/dto/product";
+import ProductUseCase from "../../../domain/product/use-case";
 
 export class ProductControllers {
     constructor(
-        private readonly createUseCase: CreateProductUseCase,
-        private readonly queryUseCase: QueryProductsUseCase,
-        private readonly getUseCase: GetProductUseCase,
-        private readonly updateUseCase: UpdateProductUseCase,
-        private readonly updateStatusUseCase: UpdateProductStatusUseCase,
-        private readonly deleteUseCase: DeleteProductUseCase
+        private readonly productUseCase: ProductUseCase
     ) {
         this.createProduct = this.createProduct.bind(this);
         this.getProduct = this.getProduct.bind(this);
@@ -44,7 +34,7 @@ export class ProductControllers {
                 return;
             }
 
-            const result = await this.createUseCase.execute(validate.data, {
+            const result = await this.productUseCase.create.execute(validate.data, {
                 userId: req.user?.id!,
                 roles: req.user?.roles!
             });
@@ -84,7 +74,7 @@ export class ProductControllers {
                 return;
             }
 
-            const result = await this.getUseCase.execute({ id: productId });
+            const result = await this.productUseCase.get.execute({ id: productId });
 
             if (!result.success) {
                 const data = {
@@ -111,7 +101,7 @@ export class ProductControllers {
     async queryProducts(req: Request, res: Response, next: NextFunction) {
         try {
             const query = this.generateProductQuery(req.query);
-            const result = await this.queryUseCase.execute(query);
+            const result = await this.productUseCase.query.execute(query);
 
             if (!result.success) {
                 const data = {
@@ -149,7 +139,7 @@ export class ProductControllers {
                 return;
             }
 
-            const result = await this.updateUseCase.execute({
+            const result = await this.productUseCase.update.execute({
                 data: req.body,
                 id: req.body.id
             }, {
@@ -184,7 +174,7 @@ export class ProductControllers {
             const productId = req.params.productId;
             const status = req.body.status;
 
-            const result = await this.updateStatusUseCase.execute({ id: productId, status });
+            const result = await this.productUseCase.updateStatus.execute({ id: productId, status });
 
             if (!result.success) {
                 const data = {
@@ -211,7 +201,7 @@ export class ProductControllers {
     async deleteProduct(req: Request, res: Response, next: NextFunction) {
         try {
             const productId = req.params.productId;
-            const result = await this.deleteUseCase.execute({ id: productId }, { userId: req?.user?.id!, roles: req?.user?.roles! });
+            const result = await this.productUseCase.delete.execute({ id: productId }, { userId: req?.user?.id!, roles: req?.user?.roles! });
 
             if (!result.success) {
                 const data = {
@@ -297,12 +287,5 @@ export class ProductControllers {
     }
 }
 
-const productRepository = new ProductRepositoryImpl(ProductModel);
-export const productControllers = new ProductControllers(
-    new CreateProductUseCase(productRepository),
-    new QueryProductsUseCase(productRepository),
-    new GetProductUseCase(productRepository),
-    new UpdateProductUseCase(productRepository),
-    new UpdateProductStatusUseCase(productRepository),
-    new DeleteProductUseCase(productRepository)
-);
+
+export const productControllers = new ProductControllers(new ProductUseCase(new ProductRepositoryImpl(ProductModel)));
