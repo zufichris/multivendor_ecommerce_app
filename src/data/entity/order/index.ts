@@ -86,6 +86,7 @@ export const OrderSchema = z
     .object({
         id: z.string().optional(),
         userId: z.string(),
+        ordId: z.string().optional(),
         items: z.array(OrderItemSchema),
         totalAmount: z.number().min(0),
         totalDiscount: z.number().min(0).optional(),
@@ -109,15 +110,6 @@ export const OrderSchema = z
         ).default([]),
     })
     .strict()
-    .refine((data) => {
-        const sumItems = data.items.reduce((sum, item) => sum + item.totalPrice, 0);
-        const expectedTotal = data.totalDiscount ? sumItems - data.totalDiscount : sumItems;
-        return Math.abs(data.totalAmount - expectedTotal) < 0.01;
-    }, {
-        message:
-            "totalAmount must equal the sum of all item totalPrices minus totalDiscount (if provided)",
-        path: ["totalAmount"],
-    })
 
 
 export type TOrder = z.infer<typeof OrderSchema>
