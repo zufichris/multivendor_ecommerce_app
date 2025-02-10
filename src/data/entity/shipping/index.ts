@@ -17,7 +17,10 @@ const ShippingStatusHistorySchema = z.object({
 
 export const ShippingSchema = z
     .object({
-        address: AddressSchema.strict().optional(),
+        id: z.string().optional(),
+        orderId: z.string(),
+        shipId: z.string().optional(),
+        address: AddressSchema.optional(),
         addressId: z.string(),
         userId: z.string(),
         trackingNumber: z.string().optional(),
@@ -25,6 +28,8 @@ export const ShippingSchema = z
         status: EShippingStatus.default("PENDING"),
         estimatedDelivery: z.string().datetime().optional(),
         statusHistory: z.array(ShippingStatusHistorySchema).default([]),
+        createdAt: z.date().optional(),
+        updatedAt: z.date().optional()
     })
     .strict();
 
