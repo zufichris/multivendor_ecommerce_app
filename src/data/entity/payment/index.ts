@@ -24,6 +24,7 @@ const PaymentAttemptSchema = z.object({
 export const PaymentSchema = z
     .object({
         id: z.string().optional(),
+        payId: z.string().optional(),
         orderId: z.string(),
         userId: z.string(),
         paymentMethodId: z.string(),
@@ -44,11 +45,5 @@ export const PaymentSchema = z
         updatedAt: z.string().datetime(),
     })
     .strict()
-    .refine((data) => {
-        return data.amountPaid <= data.amountRequested;
-    }, {
-        message: "amountPaid cannot be greater than amountRequested",
-        path: ["amountPaid"],
-    })
 
 export type TPayment = z.infer<typeof PaymentSchema>
