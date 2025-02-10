@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import { TPayment } from "../../../entity/payment";
+import { PaymentSchema, TPayment } from "../../../entity/payment";
+import { validateBeforeSave } from "../../../../util/functions";
 
 const PaymentStatusHistorySchema = new mongoose.Schema(
     {
@@ -33,7 +34,9 @@ const PaymentFeeSchema = new mongoose.Schema(
 
 
 export type PaymentDocument = TPayment & mongoose.Document
-const schema = new mongoose.Schema({
+
+const schema = new mongoose.Schema<PaymentDocument>({
+    payId: String,
     orderId: { type: String, required: true },
     userId: { type: String, required: true },
     paymentMethodId: { type: String, required: true },
@@ -60,5 +63,12 @@ const schema = new mongoose.Schema({
         virtuals: true,
     }
 });
+
+validateBeforeSave(schema, PaymentSchema.refine((data) => {
+    return data.amountPaid <= data.amountRequested;
+}, {
+    message: "amountPaid cannot be greater than amountRequested",
+    path: ["amountPaid"],
+}), "Payment")
 
 export const PaymentModel: mongoose.Model<PaymentDocument> = mongoose.models.Payment || mongoose.model("Payment", schema)
