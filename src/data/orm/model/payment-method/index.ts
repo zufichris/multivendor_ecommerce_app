@@ -5,6 +5,7 @@ import { validateBeforeSave } from "../../../../util/functions";
 export type PaymentMethodDocument = TPaymentMethod & mongoose.Document;
 
 const schema = new mongoose.Schema<PaymentMethodDocument>({
+    pmtId:String,
     name: { type: String, required: true },
     description: { type: String, required: true },
     logo: { type: String, required: true },
@@ -28,6 +29,15 @@ const schema = new mongoose.Schema<PaymentMethodDocument>({
     }
 });
 
-validateBeforeSave(schema, PaymentMethodSchema, "PaymentMethod")
+validateBeforeSave(schema, PaymentMethodSchema.refine((data) => {
+    if (data.maxAmount) {
+        return data.maxAmount >= data.minAmount;
+    }
+    return true;
+}, {
+    message: "maxAmount must be greater than or equal to minAmount",
+    path: ["maxAmount"],
+})
+    , "PaymentMethod")
 
 export const PaymentMethodModel: mongoose.Model<PaymentMethodDocument> = mongoose.models.PaymentMethod || mongoose.model("PaymentMethod", schema)
