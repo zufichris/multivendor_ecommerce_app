@@ -1,7 +1,7 @@
 import express from "express";
-import { userControllers } from "../../controllers/user";
+import { userControllers } from "../../controller/user";
 import { authMiddleWare } from "../../middleware/auth";
-import { Role } from "../../../data/enums/user";
+import { Role } from "../../../data/enum/user";
 
 const router = express.Router();
 router.use(authMiddleWare.requireAuth)

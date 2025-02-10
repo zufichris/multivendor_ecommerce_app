@@ -1,5 +1,5 @@
 import express from "express";
-import { authControllers } from "../../controllers/auth";
+import { authControllers } from "../../controller/auth";
 import { authMiddleWare } from "../../middleware/auth";
 const router = express.Router();
 router.post("/", authControllers.signUp);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { VendorSchema } from "../../entities/vendor";
+import { VendorSchema } from "../../entity/vendor";
 export const CreateVendorSchema = VendorSchema.pick({
     businessName: true,
     businessType: true,

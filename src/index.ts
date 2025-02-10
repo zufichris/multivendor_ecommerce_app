@@ -4,7 +4,7 @@ import cors from "cors"
 import router from "./http/routes/route_v1";
 import { Start } from "./http/server/httpServer";
 import { errorHandler, notFound } from "./http/middleware/error";
-import { DB } from "./config/dbConfig";
+import { DB } from "./config/db-config";
 import { env } from "./config/env";
 import { loggerMiddleware } from "./http/middleware/logger";
 

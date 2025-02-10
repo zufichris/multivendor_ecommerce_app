@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../global/error";
-import { EStatusCodes } from "../../../global/enums";
-import { IResponseData } from "../../../global/entities";
+import { EStatusCodes } from "../../../global/enum";
+import { IResponseData } from "../../../global/entity";
 import { env } from "../../../config/env";
 
 export const notFound = (req: Request, res: Response, next: NextFunction) => {

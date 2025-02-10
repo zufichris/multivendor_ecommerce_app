@@ -1,7 +1,7 @@
 import express from "express"
 import { authMiddleWare } from "../../middleware/auth"
-import { Role } from "../../../data/enums/user"
-import { vendorControllers } from "../../controllers/vendor"
+import { Role } from "../../../data/enum/user"
+import { vendorControllers } from "../../controller/vendor"
 const router = express.Router()
 
 router.use(authMiddleWare.requireAuth).use((req, res, next) => authMiddleWare.authorize([Role.Vendor, Role.Admin], req, res, next))

@@ -1,5 +1,5 @@
 import { env } from "../../config/env";
-import { logger } from "../../utils/logger";
+import { logger } from "../../util/logger";
 
 export type AppErrorPayload = {
   message: string;

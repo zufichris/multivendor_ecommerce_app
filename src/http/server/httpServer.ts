@@ -1,7 +1,7 @@
 import http from "http";
 import { env } from "../../config/env";
 import { AppError } from "../../global/error";
-import { logger } from "../../utils/logger";
+import { logger } from "../../util/logger";
 
 export function Start(app: Express.Application) {
   const server = http.createServer(app);

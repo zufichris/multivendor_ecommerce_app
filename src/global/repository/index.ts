@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ID, IQueryFilters, IQueryResult } from "../entities";
+import { ID, IQueryFilters, IQueryResult } from "../entity";
 
 export interface IBaseRepository<TData, TQueryResult = IQueryResult<TData>> {
   create(data: Partial<TData>): Promise<TData | null>;

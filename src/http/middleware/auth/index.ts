@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../../../global/error";
-import { Role } from "../../../data/enums/user";
-import { AuthUseCase } from "../../../domain/auth/usecase/AuthUseCase";
-import { UserRepositoryImpl } from "../../../data/orm/repositoryImpl/user";
-import { UserModel } from "../../../data/orm/models/user";
-import { CreateUserUseCase } from "../../../domain/users/usecase/CreateUser";
+import { Role } from "../../../data/enum/user";
+import AuthUseCase from "../../../domain/auth/use-case";
+import { UserRepositoryImpl } from "../../../data/orm/repository-implementation/user";
+import { UserModel } from "../../../data/orm/model/user";
+import { CreateUserUseCase } from "../../../domain/user/use-case/create-user";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
 
 export class AuthMiddleWare {
