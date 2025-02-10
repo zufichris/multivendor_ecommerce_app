@@ -18,7 +18,9 @@ const ShippingStatusHistorySchema = new mongoose.Schema(
 );
 
 const schema = new mongoose.Schema<ShippingDocument>({
+    orderId: String,
     addressId: { type: String, ref: "Address" },
+    shipId: String,
     userId: { type: String, required: true },
     trackingNumber: { type: String },
     carrier: { type: String },
