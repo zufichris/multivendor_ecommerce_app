@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
-import { TOrder } from "../../../entity/order";
+import { OrderSchema, TOrder } from "../../../entity/order";
+import { validateBeforeSave } from "../../../../util/functions";
 
 const OrderItemDiscountSchema = new mongoose.Schema(
     {
@@ -99,6 +100,7 @@ export type OrderDocument = TOrder & mongoose.Document
 
 const schema = new mongoose.Schema<OrderDocument>({
     userId: { type: String, required: true },
+    ordId: String,
     items: { type: [OrderItemSchema], required: true },
     totalAmount: { type: Number, required: true, min: 0 },
     totalDiscount: { type: Number, min: 0, default: 0 },
@@ -116,5 +118,17 @@ const schema = new mongoose.Schema<OrderDocument>({
     },
     statusHistory: { type: [OrderStatusHistorySchema], default: [] },
 });
+
+
+validateBeforeSave(schema, OrderSchema.refine((data) => {
+    const sumItems = data.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const expectedTotal = data.totalDiscount ? sumItems - data.totalDiscount : sumItems;
+    return Math.abs(data.totalAmount - expectedTotal) < 0.01;
+}, {
+    message:
+        "totalAmount must equal the sum of all item totalPrices minus totalDiscount (if provided)",
+    path: ["totalAmount"],
+}), "Order")
+
 
 export const OrderModel: mongoose.Model<OrderDocument> = mongoose.models.Order || mongoose.model("Order", schema)
