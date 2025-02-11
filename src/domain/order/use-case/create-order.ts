@@ -12,17 +12,17 @@ export class CreateOrderUseCase implements BaseUseCase<CreateOrderDTO, TOrder, A
         try {
             if (!context.userId) {
                 return handleUseCaseError({
-                    title: "Forbidden",
-                    error: "Forbidden",
-                    status: EStatusCodes.enum.forbidden
+                    title: "Authentication Required",
+                    error: "User not authenticated.",
+                    status: EStatusCodes.enum.unauthorized
                 });
             }
 
             const validate = validateData<CreateOrderDTO>(input, CreateOrderSchema);
             if (!validate.success) {
                 return handleUseCaseError({
-                    title: "Create Order",
-                    error: validate.error,
+                    title: "Invalid Input",
+                    error: `Validation failed: ${validate.error}`,
                     status: EStatusCodes.enum.badRequest
                 });
             }
@@ -36,8 +36,9 @@ export class CreateOrderUseCase implements BaseUseCase<CreateOrderDTO, TOrder, A
             const createdOrder = await this.orderRepository.create(data);
             if (!createdOrder) {
                 return handleUseCaseError({
-                    title: "Create Order",
-                    error: "Error creating order"
+                    title: "Order Creation Failed",
+                    error: "Failed to create order in the database.",
+                    status: EStatusCodes.enum.internalServerError
                 });
             }
 
@@ -45,9 +46,10 @@ export class CreateOrderUseCase implements BaseUseCase<CreateOrderDTO, TOrder, A
                 data: createdOrder,
                 success: true,
             };
-        } catch (error) {
+        } catch (error: any) {
             return handleUseCaseError({
-                title: "Create Order",
+                title: "Unexpected Error",
+                error: `An unexpected error occurred: ${error.message || error}`,
                 status: EStatusCodes.enum.internalServerError
             });
         }
