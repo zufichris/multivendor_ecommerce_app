@@ -9,13 +9,13 @@ export class UpdateProductStatusUseCase implements BaseUseCase<{ id: string; sta
     async execute(input: { id: string; status: typeof EProductStatus._type }, context?: AuthContext): Promise<UseCaseResult<TProduct>> {
         try {
             if (!isVendor(context?.roles)) {
-                return handleUseCaseError({ error: "Unauthorized", title: "Update Product Status", status: EStatusCodes.enum.forbidden });
+                return handleUseCaseError({ error: "Unauthorized to update product status.", title: "Update Product Status", status: EStatusCodes.enum.forbidden });
             }
 
             const { id, status } = input;
             const updatedProduct = await this.productRepository.update(id, { status });
             if (!updatedProduct) {
-                return handleUseCaseError({ error: "Product Not Found", title: "Update Product Status", status: EStatusCodes.enum.notFound });
+                return handleUseCaseError({ error: `Product with id ${id} not found.`, title: "Update Product Status", status: EStatusCodes.enum.notFound });
             }
 
             return {
@@ -23,7 +23,8 @@ export class UpdateProductStatusUseCase implements BaseUseCase<{ id: string; sta
                 data: updatedProduct,
             };
         } catch (error) {
-            return handleUseCaseError({ title: "Update Product Status" });
+            console.error("Error updating product status:", error);
+            return handleUseCaseError({ title: "Update Product Status", error: "Failed to update product status.", status: EStatusCodes.enum.internalServerError });
         }
     }
 }
