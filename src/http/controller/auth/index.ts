@@ -1,8 +1,7 @@
 import { Response, Request, NextFunction, CookieOptions } from "express";
 import { GoogleAuthConfig } from "../../../config/google";
-import  AuthUseCase  from "../../../domain/auth/use-case";
+import AuthUseCase from "../../../domain/auth/use-case";
 import { GoogleAuthControllers } from "./GoogleAuth";
-import { CreateUserSchema, SignInDTO, SignInSchema, SocialSignInDTO, SocialSignInSchema } from "../../../data/dto/user";
 import { validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { IResponseData } from "../../../global/entity";
@@ -11,6 +10,13 @@ import { UserRepositoryImpl } from "../../../data/orm/repository-implementation/
 import { UserModel } from "../../../data/orm/model/user";
 import { CreateUserUseCase } from "../../../domain/user/use-case/create-user";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
+import {
+  CreateUserSchema,
+  SignInDTO,
+  SignInSchema,
+  SocialSignInDTO,
+  SocialSignInSchema,
+} from "../../../data/dto/user";
 
 export class AuthControllers {
   public googleAuthControllers = new GoogleAuthControllers(GoogleAuthConfig);
@@ -30,9 +36,6 @@ export class AuthControllers {
       path: req.path,
       type: type ?? "Auth",
       message,
-      error: {
-        message,
-      },
     };
   }
 
@@ -40,35 +43,30 @@ export class AuthControllers {
     try {
       const validation = validateData<TUser>(req.body, CreateUserSchema);
       if (!validation.success) {
-        const data = {
-          ...this.generateMetadata(req, "Validation failed"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Invalid signup data provided"),
           status: EStatusCodes.enum.badRequest,
           success: false,
-          description: "Invalid input data for creating a new user",
-          error: validation.error,
         };
-        res.status(data.status).json(data);
-        return;
+        res.status(EStatusCodes.enum.badRequest).json(data);
+        return
       }
 
       const result = await this.authUseCase.signUp(validation.data);
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, "User creation conflict"),
-          status: EStatusCodes.enum.conflict,
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Signup failed", "Auth"),
+          status: result.status ?? EStatusCodes.enum.conflict,
           success: false,
-          description: "Email already in use or other conflict occurred",
-          error: result.error,
         };
         res.status(data.status).json(data);
-        return;
+        return
       }
 
       const data: IResponseData<TUser> = {
-        ...this.generateMetadata(req, "New user created"),
+        ...this.generateMetadata(req, "Signup successful"),
         status: EStatusCodes.enum.created,
         success: true,
-        description: "New user successfully created with email and password",
         data: result.data,
       };
       res.status(data.status).json(data);
@@ -78,36 +76,31 @@ export class AuthControllers {
   }
   async signIn(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = validateData<SignInDTO>(req.body, SignInSchema);;
+      const validation = validateData<SignInDTO>(req.body, SignInSchema);
       if (!validation.success) {
-        const data = {
-          ...this.generateMetadata(req, "Invalid login credentials"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Invalid signin data provided"),
           status: EStatusCodes.enum.badRequest,
           success: false,
-          description: "Validation failed for the provided email and password",
-          error: validation.error,
         };
-        res.status(data.status).json(data);
-        return;
+        res.status(EStatusCodes.enum.badRequest).json(data);
+        return
       }
       const result = await this.authUseCase.signIn(validation.data);
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "Authentication failed", "Auth"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Signin failed", "Auth"),
           status: result.status ?? EStatusCodes.enum.unauthorized,
           success: false,
-          description: "Invalid email or password",
-          error: result.error,
         };
         res.status(data.status).json(data);
-        return;
+        return
       }
 
-      const data = {
-        ...this.generateMetadata(req, "Login successful"),
+      const data: IResponseData<TUser> = {
+        ...this.generateMetadata(req, "Signin successful"),
         status: EStatusCodes.enum.ok,
         success: true,
-        description: "User successfully logged in",
         data: result.data,
       };
 
@@ -115,7 +108,9 @@ export class AuthControllers {
         res,
         result.data.tokenPair?.accessToken as string,
         result.data.tokenPair?.refreshToken as string
-      ).status(data.status).json(data);
+      )
+        .status(data.status)
+        .json(data);
     } catch (error) {
       next(error);
     }
@@ -123,38 +118,36 @@ export class AuthControllers {
 
   async socialSignIn(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = validateData<SocialSignInDTO>(req.body, SocialSignInSchema);
+      const validation = validateData<SocialSignInDTO>(
+        req.body,
+        SocialSignInSchema
+      );
       if (!validation.success) {
-        const data = {
-          ...this.generateMetadata(req, "Invalid social login credentials"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Invalid social signin data provided"),
           status: EStatusCodes.enum.badRequest,
           success: false,
-          description: `Validation failed for  login data`,
-          error: validation.error,
         };
-        res.status(data.status).json(data);
-        return;
+        res.status(EStatusCodes.enum.badRequest).json(data);
+        return
       }
 
       const user = validation.data;
       const result = await this.authUseCase.signIn(user);
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, "Social authentication failed"),
-          status: EStatusCodes.enum.unauthorized,
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Social signin failed", "Auth"),
+          status: result.status ?? EStatusCodes.enum.unauthorized,
           success: false,
-          description: "Social login failed for the provided user details",
-          error: result.error,
         };
         res.status(data.status).json(data);
-        return;
+        return
       }
 
       const data: IResponseData<TUser> = {
-        ...this.generateMetadata(req, "Social login successful"),
+        ...this.generateMetadata(req, "Social signin successful"),
         status: EStatusCodes.enum.ok,
         success: true,
-        description: "User successfully logged in using social account",
         data: result.data,
       };
       res.status(data.status).json(data);
@@ -200,7 +193,11 @@ export class AuthControllers {
     };
   }
 
-  private setCookies(res: Response, accessToken?: string, refreshToken?: string) {
+  private setCookies(
+    res: Response,
+    accessToken?: string,
+    refreshToken?: string
+  ) {
     const { accessTokenOptions, refreshTokenOptions } = this.getTokenOptions();
     res.cookie("access_token", accessToken, accessTokenOptions);
     res.cookie("refresh_token", refreshToken, refreshTokenOptions);
