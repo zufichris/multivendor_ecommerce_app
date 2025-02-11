@@ -11,16 +11,31 @@ export class QueryOrdersUseCase implements BaseUseCase<IQueryFilters<TOrder>, IQ
     async execute(options?: IQueryFilters<TOrder>, context?: AuthContext): Promise<UseCaseResult<IQueryResult<TOrder>>> {
         try {
             if (!isAdmin(context?.roles)) {
-                return handleUseCaseError({ title: "Forbidden", status: EStatusCodes.enum.forbidden });
+                return handleUseCaseError({
+                    title: "Forbidden",
+                    error: "Insufficient permissions to query orders.",
+                    status: EStatusCodes.enum.forbidden
+                });
             }
+
             const result = await this.orderRepository.query(options);
+
             if (!result) {
-                return handleUseCaseError({ error: "Error fetching orders", title: "Get Orders" });
+                return handleUseCaseError({
+                    title: "Get Orders",
+                    error: "Failed to retrieve orders from the database.",
+                    status: EStatusCodes.enum.notFound
+                });
             }
 
             return { data: result, success: true };
         } catch (error) {
-            return handleUseCaseError({ title: "Get Orders", status: 500 });
+            console.error("Error querying orders:", error);
+            return handleUseCaseError({
+                title: "Get Orders",
+                error: "An unexpected error occurred while querying orders.",
+                status: EStatusCodes.enum.internalServerError
+            });
         }
     }
 }
