@@ -11,6 +11,7 @@ interface BaseResponseData {
 interface ResErr extends BaseResponseData {
   success: false
   error?: { message: string };
+  data?: null
   stack?: any;
 }
 interface ResSuccess<TData> extends BaseResponseData {
