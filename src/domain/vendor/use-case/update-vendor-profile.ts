@@ -11,24 +11,24 @@ export class UpdateVendorUseCase implements BaseUseCase<{ id: string, data: Part
 
     async execute(input: { id: string, data: Partial<UpdateVendorDTO> }, context: AuthContext): Promise<UseCaseResult<TVendor>> {
         try {
-            if (!isAdmin(context.roles) || !!isVendor(context.roles)) {
-                return handleUseCaseError({ title: "Forbidden", error: "Unauthorized", status: EStatusCodes.enum.forbidden })
+            if (!isAdmin(context.roles) && !isVendor(context.roles)) {
+                return handleUseCaseError({ title: "Forbidden", error: "Unauthorized access", status: EStatusCodes.enum.forbidden })
             }
             const { id, data } = input;
             const validate = validateData<UpdateVendorDTO>(data, UpdateUserSchema);
             if (!validate.success) {
-                return handleUseCaseError({ error: validate.error, title: "Update Vendor", status: EStatusCodes.enum.badRequest });
+                return handleUseCaseError({ error: validate.error, title: "Invalid Input", status: EStatusCodes.enum.badRequest });
             }
 
             const existingVendor = await this.vendorRepository.findById(id);
             if (!existingVendor) {
-                return handleUseCaseError({ error: "Vendor not found", title: "Update Vendor", status: EStatusCodes.enum.notFound });
+                return handleUseCaseError({ error: "Vendor not found", title: "Vendor Not Found", status: EStatusCodes.enum.notFound });
             }
 
             const updatedVendor = await this.vendorRepository.update(id, { ...validate.data, updatedAt: new Date() });
 
             if (!updatedVendor) {
-                return handleUseCaseError({ error: "Error updating vendor", title: "Update Vendor" });
+                return handleUseCaseError({ error: "Failed to update vendor profile", title: "Update Failed", status: EStatusCodes.enum.internalServerError });
             }
 
             return {
@@ -36,7 +36,8 @@ export class UpdateVendorUseCase implements BaseUseCase<{ id: string, data: Part
                 success: true,
             };
         } catch (error) {
-            return handleUseCaseError({ title: "Update Vendor", status: 500 });
+            console.error("Error updating vendor:", error);
+            return handleUseCaseError({ title: "Internal Server Error", error: "An unexpected error occurred while updating the vendor.", status: EStatusCodes.enum.internalServerError });
         }
     }
 }
