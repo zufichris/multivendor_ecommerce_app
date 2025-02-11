@@ -14,7 +14,7 @@ export class UpdateOrderUseCase implements BaseUseCase<UpdateOrderDTO, TOrder, A
             if (!context.userId) {
                 return handleUseCaseError({
                     title: "Forbidden",
-                    error: "Forbidden",
+                    error: "User not authenticated",
                     status: EStatusCodes.enum.forbidden
                 });
             }
@@ -23,7 +23,7 @@ export class UpdateOrderUseCase implements BaseUseCase<UpdateOrderDTO, TOrder, A
             if (!validation.success) {
                 return handleUseCaseError({
                     error: validation.error,
-                    title: "Update Order",
+                    title: "Invalid Input",
                     status: EStatusCodes.enum.badRequest
                 });
             }
@@ -31,7 +31,7 @@ export class UpdateOrderUseCase implements BaseUseCase<UpdateOrderDTO, TOrder, A
             const existingOrder = await this.orderRepository.findOne({ id: validation.data.id });
             if (!existingOrder) {
                 return handleUseCaseError({
-                    error: "The requested order could not be found. Please verify the order ID and try again.",
+                    error: "Order not found",
                     title: "Order Not Found",
                     status: EStatusCodes.enum.notFound
                 });
@@ -40,8 +40,9 @@ export class UpdateOrderUseCase implements BaseUseCase<UpdateOrderDTO, TOrder, A
             const updatedOrder = await this.orderRepository.update(validation.data.id!, validation.data);
             if (!updatedOrder) {
                 return handleUseCaseError({
-                    error: "Error updating order",
-                    title: "Update Order"
+                    error: "Failed to update order in database",
+                    title: "Database Error",
+                    status: EStatusCodes.enum.internalServerError
                 });
             }
 
@@ -51,10 +52,10 @@ export class UpdateOrderUseCase implements BaseUseCase<UpdateOrderDTO, TOrder, A
             };
         } catch (error) {
             return handleUseCaseError({
-                title: "Update Order",
-                status: 500
+                title: "Unexpected Error",
+                error: "An unexpected error occurred during order update",
+                status: EStatusCodes.enum.internalServerError
             });
         }
     }
 }
-
