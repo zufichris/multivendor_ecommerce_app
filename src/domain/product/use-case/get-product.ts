@@ -7,8 +7,12 @@ export class GetProductUseCase implements BaseUseCase<{ id?: string, slug?: stri
     constructor(private readonly productRepository: IProductRepository) { }
     async execute({ id, slug }: { id?: string; slug?: string; }): Promise<UseCaseResult<TProduct>> {
         try {
-            if (!slug || !id) {
-                return handleUseCaseError({ title: "invalid ID", status: EStatusCodes.enum.badRequest })
+            if (!id && !slug) {
+                return handleUseCaseError({
+                    title: "Invalid Input",
+                    error: "Either ID or Slug must be provided",
+                    status: EStatusCodes.enum.badRequest
+                });
             }
 
             let product;
@@ -17,13 +21,22 @@ export class GetProductUseCase implements BaseUseCase<{ id?: string, slug?: stri
             } else if (slug) {
                 product = await this.productRepository.findOne({ slug })
             }
+
             if (!product) {
-                return handleUseCaseError({ error: "Product not found", title: "Get Product", status: EStatusCodes.enum.notFound });
+                return handleUseCaseError({
+                    title: "Product Not Found",
+                    error: id ? `Product with ID ${id} not found` : `Product with slug ${slug} not found`,
+                    status: EStatusCodes.enum.notFound
+                });
             }
 
             return { data: product, success: true };
-        } catch (error) {
-            return handleUseCaseError({ title: "Get Product", status: 500 });
+        } catch (error: any) {
+            return handleUseCaseError({
+                title: "Get Product Failed",
+                error: "Failed to retrieve product",
+                status: EStatusCodes.enum.internalServerError
+            });
         }
     }
 }
