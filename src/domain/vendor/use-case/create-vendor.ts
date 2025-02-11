@@ -12,16 +12,28 @@ export class CreateVendorUseCase implements BaseUseCase<CreateVendorDTO, TVendor
     async execute(input: CreateVendorDTO, context: AuthContext): Promise<UseCaseResult<TVendor>> {
         try {
             if (!context.userId) {
-                return handleUseCaseError({ title: "Forbidden", error: "Forbidden", status: EStatusCodes.enum.forbidden })
+                return handleUseCaseError({
+                    title: "Authentication Required",
+                    error: "User ID not found in context. Please ensure the user is authenticated.",
+                    status: EStatusCodes.enum.unauthorized
+                });
             }
             const validate = validateData<CreateVendorDTO>(input, CreateVendorSchema);
             if (!validate.success) {
-                return handleUseCaseError({ error: validate.error, title: "Create Vendor", status: EStatusCodes.enum.badRequest });
+                return handleUseCaseError({
+                    error: `Invalid input data: ${validate.error}`,
+                    title: "Create Vendor",
+                    status: EStatusCodes.enum.badRequest
+                });
             }
 
             const existingVendor = await this.vendorRepository.findOne({ userId: validate.data.userId });
             if (existingVendor) {
-                return handleUseCaseError({ error: "Vendor with this user already exists", title: "Create Vendor" });
+                return handleUseCaseError({
+                    error: "A vendor with this user ID already exists.",
+                    title: "Create Vendor",
+                    status: EStatusCodes.enum.conflict
+                });
             }
 
             const data: Partial<TVendor> = {
@@ -45,7 +57,11 @@ export class CreateVendorUseCase implements BaseUseCase<CreateVendorDTO, TVendor
 
             const createdVendor = await this.vendorRepository.create(data);
             if (!createdVendor) {
-                return handleUseCaseError({ error: "Error creating vendor", title: "Create Vendor" });
+                return handleUseCaseError({
+                    error: "Failed to create vendor in the database.",
+                    title: "Create Vendor",
+                    status: EStatusCodes.enum.internalServerError
+                });
             }
 
             return {
@@ -53,7 +69,12 @@ export class CreateVendorUseCase implements BaseUseCase<CreateVendorDTO, TVendor
                 success: true,
             };
         } catch (error) {
-            return handleUseCaseError({ title: "Create Vendor", status: 500 });
+            console.error("Error creating vendor:", error);
+            return handleUseCaseError({
+                title: "Create Vendor",
+                error: "An unexpected error occurred while creating the vendor.",
+                status: EStatusCodes.enum.internalServerError
+            });
         }
     }
 }
