@@ -54,6 +54,7 @@ export class GetOrderUseCase implements BaseUseCase<{ orderId: string; }, TOrder
             return handleUseCaseError({
                 error: "An error occurred while fetching the order",
                 title: "Get Order",
+                status: EStatusCodes.enum.internalServerError
             });
         }
     }
