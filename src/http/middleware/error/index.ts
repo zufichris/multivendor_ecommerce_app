@@ -9,10 +9,8 @@ export const notFound = (req: Request, res: Response, next: NextFunction) => {
         new AppError({
             message: "Resource Not Found",
             status: EStatusCodes.enum.notFound,
-            type: "Invalid path or url",
-            description: 'We Could Not Find What You are Looking For',
-            url: req.url,
-            path: req.path,
+            type: "Invalid Request",
+            description: 'The requested resource could not be found.',
         })
     );
 };
@@ -23,19 +21,25 @@ export const errorHandler = (
     res: Response,
     _: NextFunction
 ) => {
-    const error: IResponseData<undefined> = {
+    const statusCode = err?.error?.status ?? EStatusCodes.enum.internalServerError;
+    const message = err?.message ?? "An unexpected error occurred.";
+    const description = err?.error?.description ?? 'An unexpected error occurred.';
+    const type = err.error?.type ?? "Error";
+
+    const errorResponse: IResponseData<undefined> = {
         success: false,
-        message: err?.message ?? "An Unexpected Error Occurred",
-        status: err?.error?.status ?? EStatusCodes.enum.badGateway,
-        description: err?.error?.description ?? 'An Unexpected Error Occurred',
+        message: message,
+        status: statusCode,
+        description: description,
         error: {
-            message: err?.message ?? "An Unexpected Error Occurred",
+            message: message,
         },
         path: req.path,
         url: req.url,
         stack: env.in_prod ? undefined : err.stack,
-        type: err.error?.type ?? "Error",
-    }
-    console.log(err);
-    res.status(error.status).json(error);
+        type: type,
+    };
+
+    console.error(err);
+    res.status(statusCode).json(errorResponse);
 };

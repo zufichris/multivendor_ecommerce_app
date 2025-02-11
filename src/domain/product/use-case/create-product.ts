@@ -10,20 +10,34 @@ export class CreateProductUseCase implements BaseUseCase<Partial<TProduct>, TPro
     async execute(input: Partial<TProduct>, context?: AuthContext): Promise<UseCaseResult<TProduct>> {
         try {
             if (!isVendor(context?.roles)) {
-                return handleUseCaseError({ error: "Unauthorized", title: "Create Product", status: EStatusCodes.enum.forbidden });
+                return handleUseCaseError({ 
+                    error: "Unauthorized: Only vendors can create products.", 
+                    title: "Create Product", 
+                    status: EStatusCodes.enum.forbidden 
+                });
             }
 
             const newProduct = await this.productRepository.create(input);
             if (!newProduct) {
-                return handleUseCaseError({ error: "Failed to create product", title: "Create Product", status: EStatusCodes.enum.internalServerError });
+                return handleUseCaseError({ 
+                    error: "Failed to create product in the database.", 
+                    title: "Create Product", 
+                    status: EStatusCodes.enum.internalServerError 
+                });
             }
 
             return {
                 success: true,
                 data: newProduct,
             };
-        } catch (error) {
-            return handleUseCaseError({ title: "Create Product" });
+        } catch (error: any) {
+            // Log the error for debugging purposes.  Consider using a logging service.
+            console.error("Error creating product:", error);
+            return handleUseCaseError({ 
+                title: "Create Product", 
+                error: "An unexpected error occurred while creating the product.", 
+                status: EStatusCodes.enum.internalServerError 
+            });
         }
     }
 }

@@ -16,9 +16,16 @@ export class AuthMiddleWare {
   async requireAuth(req: Request, _: Response, next: NextFunction) {
     try {
       const token = this.getToken(req, "access_token")
+      if (!token) {
+        throw new AppError({
+          message: "Authentication required",
+          type: "Auth Error",
+          statusCode: 401,
+        });
+      }
       if (!token!.startsWith("Bearer")) {
         throw new AppError({
-          message: "Authorization token is missing or invalid",
+          message: "Invalid authentication format",
           type: "Auth Error",
           statusCode: 401,
         });
@@ -36,7 +43,7 @@ export class AuthMiddleWare {
     } catch (error) {
       next(
         new AppError({
-          message: "Unauthorized access",
+          message: "Authentication failed",
           type: "Auth Error",
           statusCode: 401,
         })
@@ -49,7 +56,7 @@ export class AuthMiddleWare {
       const user = req.user;
       if (!user?.id || !user?.roles) {
         throw new AppError({
-          message: "User not authenticated",
+          message: "Unauthorized",
           type: "Auth Error",
           statusCode: 403,
         });
@@ -59,7 +66,7 @@ export class AuthMiddleWare {
 
       if (!hasRequiredRole) {
         throw new AppError({
-          message: "You do not have permission to access this resource",
+          message: "Insufficient permissions",
           type: "Auth Error",
           statusCode: 403,
         });

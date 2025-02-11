@@ -25,7 +25,7 @@ export class VendorControllers {
             const validate = validateData<CreateVendorDTO>(req.body, CreateVendorSchema);
             if (!validate.success) {
                 const data = {
-                    ...this.generateMetadata(req, "Validation Failed"),
+                    ...this.generateMetadata(req, "Invalid input data"),
                     status: EStatusCodes.enum.badRequest,
                     success: false,
                     description: validate.error
@@ -40,7 +40,7 @@ export class VendorControllers {
             });
             if (!result.success) {
                 const data = {
-                    ...this.generateMetadata(req, result.error),
+                    ...this.generateMetadata(req, "Failed to create vendor"),
                     status: EStatusCodes.enum.conflict,
                     success: false
                 }
@@ -65,7 +65,7 @@ export class VendorControllers {
             const vendorId = req.params.vendorId;
             if (!vendorId) {
                 const data = {
-                    ...this.generateMetadata(req, "Vendor ID is required"),
+                    ...this.generateMetadata(req, "Missing vendor ID"),
                     status: EStatusCodes.enum.badRequest,
                     success: false
                 }
@@ -76,7 +76,7 @@ export class VendorControllers {
             const result = await this.vendorUseCase.get.execute({ vendId: vendorId }, { roles: req.user?.roles!, userId: req.user?.id! });
             if (!result.success) {
                 const data = {
-                    ...this.generateMetadata(req, result.error ?? "Vendor Not Found"),
+                    ...this.generateMetadata(req, "Vendor not found"),
                     status: EStatusCodes.enum.notFound,
                     success: false
                 }
@@ -102,7 +102,7 @@ export class VendorControllers {
             const result = await this.vendorUseCase.query.execute(query);
             if (!result.success) {
                 const data = {
-                    ...this.generateMetadata(req, result.error ?? "Failed to retrieve vendors"),
+                    ...this.generateMetadata(req, "Failed to retrieve vendors"),
                     status: EStatusCodes.enum.badGateway,
                     success: false
                 }
@@ -127,7 +127,7 @@ export class VendorControllers {
             const validate = validateData<UpdateVendorDTO>(req.body, UpdateVendorSchema);
             if (!validate.success) {
                 const data = {
-                    ...this.generateMetadata(req, "Validation Failed"),
+                    ...this.generateMetadata(req, "Invalid input data"),
                     status: EStatusCodes.enum.badRequest,
                     success: false,
                     details: validate.error
@@ -145,7 +145,7 @@ export class VendorControllers {
             });
             if (!result.success) {
                 const data = {
-                    ...this.generateMetadata(req, result.error ?? "Failed to update vendor"),
+                    ...this.generateMetadata(req, "Failed to update vendor"),
                     status: EStatusCodes.enum.conflict,
                     success: false
                 }
@@ -174,7 +174,7 @@ export class VendorControllers {
             const result = await this.vendorUseCase.verify.execute({ id: vendorId, status, reason });
             if (!result.success) {
                 const data = {
-                    ...this.generateMetadata(req, result.error ?? "Failed to change vendor status"),
+                    ...this.generateMetadata(req, "Failed to change vendor status"),
                     status: result.status ?? EStatusCodes.enum.badGateway,
                     success: false
                 }
@@ -201,7 +201,7 @@ export class VendorControllers {
 
             if (!result.success) {
                 const data = {
-                    ...this.generateMetadata(req, result.error ?? "Failed to delete vendor"),
+                    ...this.generateMetadata(req, "Failed to delete vendor"),
                     status: EStatusCodes.enum.conflict,
                     success: false
                 }

@@ -8,21 +8,33 @@ export class DeleteProductUseCase implements BaseUseCase<{ id: string }, boolean
     async execute(input: { id: string }, context?: AuthContext): Promise<UseCaseResult<boolean>> {
         try {
             if (!context?.userId) {
-                return handleUseCaseError({ error: "Unauthorized", title: "Delete Product", status: EStatusCodes.enum.forbidden });
+                return handleUseCaseError({
+                    error: "User not authenticated.",
+                    title: "Delete Product",
+                    status: EStatusCodes.enum.forbidden
+                });
             }
 
             const { id } = input;
             const success = await this.productRepository.delete(id);
             if (!success) {
-                return handleUseCaseError({ error: "Product Not Found", title: "Delete Product", status: EStatusCodes.enum.notFound });
+                return handleUseCaseError({
+                    error: `Product with id ${id} not found.`,
+                    title: "Delete Product",
+                    status: EStatusCodes.enum.notFound
+                });
             }
 
             return {
                 success: true,
                 data: true,
             };
-        } catch (error) {
-            return handleUseCaseError({ title: "Delete Product" });
+        } catch (error: any) {
+            return handleUseCaseError({
+                error: `Failed to delete product: ${error.message || error}`,
+                title: "Delete Product",
+                status: EStatusCodes.enum.internalServerError
+            });
         }
     }
 }

@@ -9,6 +9,7 @@ import { UserModel } from "../../../data/orm/model/user";
 import { AddressModel } from "../../../data/orm/model/address";
 import { AddressSchema, TAddress } from "../../../data/entity/address";
 import UserUseCase from "../../../domain/user/use-case";
+import qs from 'qs';
 
 export class UserControllers {
   constructor(
@@ -22,17 +23,18 @@ export class UserControllers {
   async getMe(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
-        const data = {
-          ...this.generateMetadata(req, "Not Found"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "User not found"),
           status: EStatusCodes.enum.notFound,
           success: false,
-        }
-        res.status(data.status).json(data)
-        return
+          data: null
+        };
+        res.status(data.status).json(data);
+        return;
       }
 
       const data: IResponseData<TUser> = {
-        ...this.generateMetadata(req, "User retrieved successfully"),
+        ...this.generateMetadata(req, "User profile retrieved successfully"),
         data: req.user as TUser,
         status: EStatusCodes.enum.ok,
         success: true
@@ -47,34 +49,36 @@ export class UserControllers {
     try {
       const validate = validateData<CreateUserDTO>(req.body, CreateUserSchema);
       if (!validate.success) {
-        const data = {
-          ...this.generateMetadata(req, "Validation Failed"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Invalid input data"),
           status: EStatusCodes.enum.badRequest,
           success: false,
-          description: validate.error
-        }
+          error: { message: "Invalid input data" },
+          data: null
+        };
         res.status(data.status).json(data);
-        return
+        return;
       }
 
       const result = await this.userUseCase.create.execute(validate.data);
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to create user"),
           status: EStatusCodes.enum.badRequest,
           success: false,
-          description: result.error,
-        }
+          error: { message: result.error ?? "Failed to create user" },
+          data: null
+        };
         res.status(data.status).json(data);
-        return
+        return;
       }
 
       const data: IResponseData<TUser> = {
-        ...this.generateMetadata(req, "User Created Successfully"),
-        status: EStatusCodes.enum.badRequest,
+        ...this.generateMetadata(req, "User created successfully"),
+        status: EStatusCodes.enum.created,
         success: true,
         data: result.data,
-      }
+      };
       res.status(data.status).json(data);
     } catch (error) {
       next(error);
@@ -89,16 +93,18 @@ export class UserControllers {
         userId: req.user?.id!
       });
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to retrieve users"),
           status: result.status ?? EStatusCodes.enum.badGateway,
-          success: false
-        }
+          success: false,
+          error: { message: result.error ?? "Failed to retrieve users" },
+          data: null
+        };
         res.status(data.status).json(data);
-        return
+        return;
       }
       const data: IResponseDataPaginated<TUser> = {
-        ...this.generateMetadata(req, "User query successful"),
+        ...this.generateMetadata(req, "Users retrieved successfully"),
         success: true,
         status: EStatusCodes.enum.ok,
         ...result.data
@@ -114,13 +120,15 @@ export class UserControllers {
       const custId = req.params.custId;
       const result = await this.userUseCase.get.execute({ custId }, { roles: req.user?.roles!, userId: req.user?.id! });
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "User Not Found"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "User not found"),
           status: result.status ?? EStatusCodes.enum.notFound,
-          success: false
-        }
+          success: false,
+          error: { message: "User not found" },
+          data: null
+        };
         res.status(data.status).json(data);
-        return
+        return;
       }
 
       const data: IResponseData<TUser> = {
@@ -141,13 +149,15 @@ export class UserControllers {
     try {
       const validate = validateData<UpdateUserDTO>(req.body, UpdateUserSchema);
       if (!validate.success) {
-        const data = {
-          ...this.generateMetadata(req, "Validation Failed"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Invalid input data"),
           status: EStatusCodes.enum.badRequest,
           success: false,
+          error: { message: "Invalid input data" },
+          data: null
         };
         res.status(data.status).json(data);
-        return
+        return;
       }
 
       const result = await this.userUseCase.update.execute(validate.data, {
@@ -155,13 +165,15 @@ export class UserControllers {
         userId: req.user?.id!
       });
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "User update conflict"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to update user"),
           success: false,
-          status: result.status ?? EStatusCodes.enum.conflict
-        }
+          status: result.status ?? EStatusCodes.enum.conflict,
+          error: { message: result.error ?? "Failed to update user" },
+          data: null
+        };
         res.status(data.status).json(data);
-        return
+        return;
       }
       const data: IResponseData<TUser> = {
         ...this.generateMetadata(req, "User updated successfully"),
@@ -186,13 +198,15 @@ export class UserControllers {
         userId: req.user?.id!
       });
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "Failed to change user status"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to change user status"),
           status: result.status ?? EStatusCodes.enum.badGateway,
-          success: false
-        }
+          success: false,
+          error: { message: result.error ?? "Failed to change user status" },
+          data: null
+        };
         res.status(data.status).json(data);
-        return
+        return;
       }
 
       const data: IResponseData<TUser> = {
@@ -219,13 +233,15 @@ export class UserControllers {
         roles: req.user?.roles!
       });
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "Failed to change user role"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to change user role"),
           status: result.status ?? EStatusCodes.enum.badGateway,
-          success: false
-        }
+          success: false,
+          error: { message: result.error ?? "Failed to change user role" },
+          data: null
+        };
         res.status(data.status).json(data);
-        return
+        return;
       }
 
       const data: IResponseData<TUser> = {
@@ -243,10 +259,12 @@ export class UserControllers {
     try {
       const { custId } = req.params;
       if (!custId) {
-        const data = {
+        const data: IResponseData<null> = {
           ...this.generateMetadata(req, "Customer ID is required"),
           status: EStatusCodes.enum.badRequest,
           success: false,
+          error: { message: "Customer ID is required" },
+          data: null
         };
         res.status(data.status).json(data);
         return;
@@ -263,10 +281,11 @@ export class UserControllers {
         filter
       });
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "Failed to retrieve addresses"),
+        const data: IResponseDataPaginated<TAddress> = {
+          ...this.generateMetadata(req, "Failed to retrieve addresses"),
           status: result.status ?? EStatusCodes.enum.notFound,
           success: false,
+          error: { message: result.error ?? "Failed to retrieve addresses" },
         };
         res.status(data.status).json(data);
         return;
@@ -287,10 +306,12 @@ export class UserControllers {
     try {
       const validate = validateData<TAddress>(req.body, AddressSchema);
       if (!validate.success) {
-        const data = {
-          ...this.generateMetadata(req, "Validation Failed"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Invalid input data"),
           status: EStatusCodes.enum.badRequest,
           success: false,
+          error: { message: "Invalid input data" },
+          data: null
         };
         res.status(data.status).json(data);
         return;
@@ -298,10 +319,12 @@ export class UserControllers {
 
       const result = await this.userUseCase.updateAddress.execute(validate.data);
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "Failed to update address"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to update address"),
           status: result.status ?? EStatusCodes.enum.conflict,
           success: false,
+          error: { message: result.error ?? "Failed to update address" },
+          data: null
         };
         res.status(data.status).json(data);
         return;
@@ -322,10 +345,12 @@ export class UserControllers {
     try {
       const validate = validateData<TAddress>(req.body, AddressSchema);
       if (!validate.success) {
-        const data = {
-          ...this.generateMetadata(req, "Validation Failed"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Invalid input data"),
           status: EStatusCodes.enum.badRequest,
           success: false,
+          error: { message: "Invalid input data" },
+          data: null
         };
         res.status(data.status).json(data);
         return;
@@ -333,10 +358,12 @@ export class UserControllers {
 
       const result = await this.userUseCase.addAddress.execute(validate.data);
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "Failed to add address"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to add address"),
           status: result.status ?? EStatusCodes.enum.conflict,
           success: false,
+          error: { message: result.error ?? "Failed to add address" },
+          data: null
         };
         res.status(data.status).json(data);
         return;
@@ -344,7 +371,7 @@ export class UserControllers {
 
       const data: IResponseData<TAddress> = {
         ...this.generateMetadata(req, "Address added successfully"),
-        status: EStatusCodes.enum.ok,
+        status: EStatusCodes.enum.created,
         success: true,
         data: result.data,
       };
@@ -384,10 +411,12 @@ export class UserControllers {
     try {
       const { custId } = req.params;
       if (!custId) {
-        const data = {
+        const data: IResponseData<null> = {
           ...this.generateMetadata(req, "User ID is required"),
           status: EStatusCodes.enum.badRequest,
           success: false,
+          error: { message: "User ID is required" },
+          data: null
         };
         res.status(data.status).json(data);
         return;
@@ -397,17 +426,19 @@ export class UserControllers {
         userId: req.user?.id!
       });
       if (!result.success) {
-        const data = {
-          ...this.generateMetadata(req, result.error ?? "Failed to retrieve user stats"),
+        const data: IResponseData<null> = {
+          ...this.generateMetadata(req, "Failed to retrieve user details"),
           status: result.status ?? EStatusCodes.enum.notFound,
           success: false,
+          error: { message: result.error ?? "Failed to retrieve user details" },
+          data: null
         };
         res.status(data.status).json(data);
         return;
       }
 
       const data: IResponseData<TUser> = {
-        ...this.generateMetadata(req, "User stats retrieved successfully"),
+        ...this.generateMetadata(req, "User details retrieved successfully"),
         status: EStatusCodes.enum.ok,
         success: true,
         data: result.data,
@@ -433,9 +464,6 @@ export class UserControllers {
       path: req.path,
       type: type ?? "User",
       message,
-      error: {
-        message
-      }
     })
   }
   private generateUserQuery(query: qs.ParsedQs) {

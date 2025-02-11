@@ -12,17 +12,17 @@ export class UpdateOrderStatusUseCase implements BaseUseCase<UpdateOrderStatusDT
         try {
             if (!context?.userId) {
                 return handleUseCaseError({
-                    title: "Forbidden",
-                    error: "User authentication required.",
-                    status: EStatusCodes.enum.forbidden
+                    title: "Authentication Required",
+                    error: "User must be authenticated to perform this action.",
+                    status: EStatusCodes.enum.unauthorized
                 });
             }
 
             const validationResult = validateData<UpdateOrderStatusDTO>(input, UpdateOrderStatusSchema);
             if (!validationResult.success) {
                 return handleUseCaseError({
-                    title: "Invalid Input Data",
-                    error: validationResult.error,
+                    title: "Invalid Input",
+                    error: `Invalid order data provided: ${validationResult.error}`,
                     status: EStatusCodes.enum.badRequest
                 });
             }
@@ -33,8 +33,8 @@ export class UpdateOrderStatusUseCase implements BaseUseCase<UpdateOrderStatusDT
             );
             if (!updatedOrder) {
                 return handleUseCaseError({
-                    title: "Order Update Failed",
-                    error: "Order not found or update operation was unsuccessful.",
+                    title: "Order Not Found",
+                    error: `Order with id '${validationResult.data.id}' not found or could not be updated.`,
                     status: EStatusCodes.enum.notFound
                 });
             }
@@ -44,10 +44,11 @@ export class UpdateOrderStatusUseCase implements BaseUseCase<UpdateOrderStatusDT
                 success: true,
             };
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred while updating the order status.";
             return handleUseCaseError({
-                title: "Update Order Status Error",
-                error: error instanceof Error ? error.message : "An unknown error occurred.",
-                status: 500
+                title: "Internal Server Error",
+                error: `Failed to update order status: ${errorMessage}`,
+                status: EStatusCodes.enum.internalServerError
             });
         }
     }
