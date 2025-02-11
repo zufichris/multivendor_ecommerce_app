@@ -12,10 +12,10 @@ export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
     try {
       const validate = validateData<CreateUserDTO>(input, CreateUserSchema)
       if (!validate.success)
-        return handleUseCaseError({ error: validate.error, title: "Create User", status: EStatusCodes.enum.badRequest })
+        return handleUseCaseError({ error: validate.error, title: "Create User - Validation Error", status: EStatusCodes.enum.badRequest })
       const exists = await this.userRepository.findByEmail(validate.data.email)
       if (exists) {
-        return handleUseCaseError({ error: "User With Credentials Already Exists", title: "Create User" })
+        return handleUseCaseError({ error: "A user with this email address already exists.", title: "Create User - Duplicate Email", status: EStatusCodes.enum.conflict })
       }
       const data = {
         ...validate.data,
@@ -27,15 +27,15 @@ export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
       }
       const created = await this.userRepository.create(data)
       if (!created) {
-        return handleUseCaseError({ error: "Error Creating User", title: "Create User" })
+        return handleUseCaseError({ error: "Failed to create user in the database.", title: "Create User - Database Error", status: EStatusCodes.enum.internalServerError })
       }
       created.password = undefined
       return ({
         data: created,
         success: true
       })
-    } catch (error) {
-      return handleUseCaseError({ title: "Create User", status: 500 })
+    } catch (error: any) {
+      return handleUseCaseError({ error: "An unexpected error occurred during user creation.", title: "Create User - Unexpected Error", status: EStatusCodes.enum.internalServerError })
     }
   }
 }
