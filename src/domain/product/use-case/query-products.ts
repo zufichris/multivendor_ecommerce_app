@@ -15,15 +15,24 @@ export class QueryProductsUseCase implements BaseUseCase<IQueryFilters<TProduct>
 
             const result = await this.productRepository.query(input);
             if (!result) {
-                return handleUseCaseError({ title: "Query Products" });
+                return handleUseCaseError({
+                    title: "Query Products",
+                    error: "Products not found",
+                    status: 404,
+                });
             }
 
             return {
                 success: true,
                 data: result,
             };
-        } catch (error) {
-            return handleUseCaseError({ title: "Query Products" });
+        } catch (error: any) {
+            console.error("Error querying products:", error);
+            return handleUseCaseError({
+                title: "Query Products",
+                error: "Failed to query products",
+                status: 500,
+            });
         }
     }
 }
