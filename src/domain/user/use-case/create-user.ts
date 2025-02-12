@@ -62,6 +62,7 @@ export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
       return handleUseCaseError({ error: "An unexpected error occurred during user creation.", title: "Create User - Unexpected Error", status: EStatusCodes.enum.internalServerError })
     }
   }
+
   private async generatePlaceholderText(firstName: string, lastName?: string) {
     if (lastName?.length) {
       return `${firstName.charAt(0)}${lastName.charAt(0)}`
@@ -71,6 +72,7 @@ export class CreateUserUseCase implements BaseUseCase<CreateUserDTO, TUser> {
     }
     return `${firstName.charAt(0)}${firstName.charAt(firstName.length - 1)}`
   }
+
   private async hashPassword(password: string): Promise<string | null> {
     try {
       const salt = await bcrypt.genSalt(10);
