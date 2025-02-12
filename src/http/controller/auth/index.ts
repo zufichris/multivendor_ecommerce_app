@@ -10,13 +10,7 @@ import { UserRepositoryImpl } from "../../../data/orm/repository-implementation/
 import { UserModel } from "../../../data/orm/model/user";
 import { CreateUserUseCase } from "../../../domain/user/use-case/create-user";
 import { IAuthUseCaseRepository } from "../../../domain/auth/repository";
-import {
-  CreateUserSchema,
-  SignInDTO,
-  SignInSchema,
-  SocialSignInDTO,
-  SocialSignInSchema,
-} from "../../../data/dto/user";
+import { SignInDTO, SignInSchema, SignUpDTO, SignUpSchema, SocialSignInDTO, SocialSignInSchema } from "../../../data/dto/auth";
 
 export class AuthControllers {
   public googleAuthControllers = new GoogleAuthControllers(GoogleAuthConfig);
@@ -41,10 +35,10 @@ export class AuthControllers {
 
   async signUp(req: Request, res: Response, next: NextFunction) {
     try {
-      const validation = validateData<TUser>(req.body, CreateUserSchema);
+      const validation = validateData<SignUpDTO>(req.body, SignUpSchema);
       if (!validation.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Invalid signup data provided"),
+          ...this.generateMetadata(req, `Invalid Data-${validation.error}`),
           status: EStatusCodes.enum.badRequest,
           success: false,
         };
@@ -55,7 +49,7 @@ export class AuthControllers {
       const result = await this.authUseCase.signUp(validation.data);
       if (!result.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Signup failed", "Auth"),
+          ...this.generateMetadata(req, result.error),
           status: result.status ?? EStatusCodes.enum.conflict,
           success: false,
         };
@@ -79,7 +73,7 @@ export class AuthControllers {
       const validation = validateData<SignInDTO>(req.body, SignInSchema);
       if (!validation.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Invalid signin data provided"),
+          ...this.generateMetadata(req, "Invalid email or password"),
           status: EStatusCodes.enum.badRequest,
           success: false,
         };
@@ -89,7 +83,7 @@ export class AuthControllers {
       const result = await this.authUseCase.signIn(validation.data);
       if (!result.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Signin failed", "Auth"),
+          ...this.generateMetadata(req, result.error),
           status: result.status ?? EStatusCodes.enum.unauthorized,
           success: false,
         };
@@ -124,7 +118,7 @@ export class AuthControllers {
       );
       if (!validation.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Invalid social signin data provided"),
+          ...this.generateMetadata(req, "An error occurred"),
           status: EStatusCodes.enum.badRequest,
           success: false,
         };
@@ -133,10 +127,10 @@ export class AuthControllers {
       }
 
       const user = validation.data;
-      const result = await this.authUseCase.signIn(user);
+      const result = await this.authUseCase.socialSignIn(user);
       if (!result.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Social signin failed", "Auth"),
+          ...this.generateMetadata(req, result.error),
           status: result.status ?? EStatusCodes.enum.unauthorized,
           success: false,
         };
@@ -145,7 +139,7 @@ export class AuthControllers {
       }
 
       const data: IResponseData<TUser> = {
-        ...this.generateMetadata(req, "Social signin successful"),
+        ...this.generateMetadata(req, `${validation.data.oauth.provider} signin successful`),
         status: EStatusCodes.enum.ok,
         success: true,
         data: result.data,

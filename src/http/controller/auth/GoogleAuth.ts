@@ -7,6 +7,7 @@ import { validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { env } from "../../../config/env";
 import { IResponseData } from "../../../global/entity";
+import { SocialSignInDTO } from "../../../data/dto/auth";
 
 interface GoogleProfile {
   id: string;
@@ -173,16 +174,14 @@ export class GoogleAuthControllers {
         }
       );
 
-      const userData = {
+      const userData: SocialSignInDTO = {
         firstName: profile.name,
         email: profile.email,
         isEmailVerified: profile.verified_email,
-        isActive: true,
         profilePictureUrl: {
           external: true,
           url: profile.picture,
         },
-        externalProvider: OAuthProviders.Google,
         oauth: {
           oauthId: profile.id,
           provider: OAuthProviders.Google,

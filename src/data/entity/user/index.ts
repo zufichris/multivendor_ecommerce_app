@@ -62,7 +62,8 @@ export const UserSchema = z.object({
     phoneNumber: z.string().nullable().optional(),
     profilePictureUrl: z.object({
         external: z.boolean(),
-        url: z.string()
+        url: z.string().optional(),
+        placeholderText: z.string().optional()
     }).nullable().optional(),
     roles: z.array(z.nativeEnum(Role)).default([Role.User]),
     isActive: z.boolean().optional().default(true),
