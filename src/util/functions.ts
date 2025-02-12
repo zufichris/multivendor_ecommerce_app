@@ -23,7 +23,7 @@ export function toArray<TData>(data: unknown) {
  */
 export function validateData<T>(
   data: unknown,
-  zodSchema: z.ZodObject<any>
+  zodSchema: z.ZodObject<any>|z.ZodEffects<any>
 ): | { data: T, success: true } | { error: string, success: false } {
   const validation = zodSchema.safeParse(data);
 

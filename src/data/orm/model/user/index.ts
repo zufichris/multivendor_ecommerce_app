@@ -77,6 +77,7 @@ const userMongoose = new mongoose.Schema<UserDocument>(
     profilePictureUrl: {
       external: { type: Boolean, required: false },
       url: { type: String, required: false },
+      placeholderText: { type: String, required: false },
     },
     isActive: { type: Boolean, default: true },
     isEmailVerified: { type: Boolean, default: false },

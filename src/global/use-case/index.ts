@@ -18,7 +18,7 @@ export function handleUseCaseError({ title, error = "An unexpected Error Occurre
   status?: number,
 }): { success: false, error: string } {
   return ({
-    error: `${title}-${error}`,
+    error: `${title}-Error: ${error}`,
     success: false
   })
 }

@@ -63,10 +63,10 @@ export class UserControllers {
       const result = await this.userUseCase.create.execute(validate.data);
       if (!result.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Failed to create user"),
+          ...this.generateMetadata(req, result.error),
           status: EStatusCodes.enum.badRequest,
           success: false,
-          error: { message: result.error ?? "Failed to create user" },
+          error: { message: result.error },
           data: null
         };
         res.status(data.status).json(data);
@@ -94,7 +94,7 @@ export class UserControllers {
       });
       if (!result.success) {
         const data: IResponseData<null> = {
-          ...this.generateMetadata(req, "Failed to retrieve users"),
+          ...this.generateMetadata(req, result.error),
           status: result.status ?? EStatusCodes.enum.badGateway,
           success: false,
           error: { message: result.error ?? "Failed to retrieve users" },

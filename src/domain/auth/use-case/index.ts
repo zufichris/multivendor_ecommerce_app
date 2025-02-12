@@ -1,6 +1,5 @@
 import JWT from 'jsonwebtoken';
 import bcrypt from "bcrypt"
-import { CreateUserDTO, CreateUserSchema, SignInDTO, SocialSignInDTO, SocialSignInSchema } from "../../../data/dto/user";
 import { TUser } from "../../../data/entity/user";
 import { ID } from "../../../global/entity";
 import { EStatusCodes } from "../../../global/enum";
@@ -11,6 +10,8 @@ import { IUserRepository } from "../../user/repository";
 import { CreateUserUseCase } from "../../user/use-case/create-user";
 import { AutUseCaseRepository, TokenPair } from "../repository";
 import { env } from '../../../config/env';
+import { SignInDTO, SignInSchema, SignUpDTO, SignUpSchema, SocialSignInDTO, SocialSignInSchema } from '../../../data/dto/auth';
+import { CreateUserDTO } from '../../../data/dto/user';
 
 
 export default class AuthUseCase extends AutUseCaseRepository {
@@ -18,6 +19,7 @@ export default class AuthUseCase extends AutUseCaseRepository {
     super()
     this.signUp = this.signUp.bind(this);
     this.signIn = this.signIn.bind(this);
+    this.socialSignIn = this.socialSignIn.bind
     this.signOut = this.signOut.bind(this);
     this.signJWT = this.signJWT.bind(this);
     this.decodeJWT = this.decodeJWT.bind(this);
@@ -26,71 +28,55 @@ export default class AuthUseCase extends AutUseCaseRepository {
     this.verifyPassword = this.verifyPassword.bind(this);
   }
 
-  async signUp(data: CreateUserDTO): Promise<UseCaseResult<TUser>> {
+  async signUp(data: SignUpDTO): Promise<UseCaseResult<TUser>> {
     try {
-      const validate = validateData<CreateUserDTO>(data, CreateUserSchema)
+
+      const validate = validateData<SignUpDTO>(data, SignUpSchema)
       if (!validate.success) {
-        return handleUseCaseError({ error: "Invalid data", title: "Sign Up", status: EStatusCodes.enum.badRequest })
+        return handleUseCaseError({ error: validate.error, title: "Signup", status: EStatusCodes.enum.badRequest })
       }
-      const hashedPassword = await this.hashPassword(validate.data?.password!)
-      data.password = hashedPassword
+
       const created = await this.createNewUser.execute(data)
       if (!created.success) {
         return handleUseCaseError({ error: created.error, title: "SignUp" })
       }
-      const tokens = this.generateTokens(created.data);
-      created.data.tokenPair = { ...tokens, provider: undefined }
-      return created
+      const loggedIn = await this.getUserTokens(created.data)
+      if (!loggedIn) {
+        return handleUseCaseError({
+          title: "Signin",
+          error: "An unexpected error occurred"
+        })
+      }
+      return ({
+        data: loggedIn,
+        success: true
+      });
     } catch (error) {
       return handleUseCaseError({ title: "Sign Up" })
     }
   }
-  async signIn(data: SignInDTO | SocialSignInDTO): Promise<UseCaseResult<TUser>> {
+  async signIn(data: SignInDTO): Promise<UseCaseResult<TUser>> {
     try {
-      const validate = validateData<CreateUserDTO>(data, CreateUserSchema)
+      const validate = validateData<SignInDTO>(data, SignInSchema)
       if (!validate.success) {
-        return handleUseCaseError({ error: `Invalid Email Or Password-${validate.error}`, title: "SignIn" })
-      }
-      let exists = await this.userRepository.findByEmail(validate.data.email);
-      let externalProvider = validate.data?.externalProvider
-
-      if (!exists && !externalProvider) {
-        return handleUseCaseError({ error: "No Account With this Credentials", title: "SignIn" })
+        return handleUseCaseError({ error: "Invalid email or password", title: "SignIn" })
       }
 
-      if (!exists && externalProvider) {
-        //handle OAuth first signIn
-        const validateNewOAuth = validateData<SocialSignInDTO>(data, SocialSignInSchema)
-        if (!validateNewOAuth.success) {
-          return handleUseCaseError({ error: `Create User from ${externalProvider}- ${validateNewOAuth.error}`, title: `${externalProvider} SignIn` })
-        }
-        const newUser = await this.createNewUser.execute(validateNewOAuth?.data)
-        if (!newUser.success) {
-          return handleUseCaseError({ error: `Create User from ${externalProvider}`, title: `${externalProvider} SignIn` })
-        }
-        exists = newUser.data
+      const exists = await this.userRepository.findByEmail(validate.data.email);
+
+      if (!exists) {
+        return handleUseCaseError({ error: "Invalid Email or Password", title: "SignIn" })
+      }
+      const password = await this.userRepository.getPasswordHash(exists.id!)
+      const matched = await this.verifyPassword(validate.data.password, password!)
+
+      if (!matched) {
+        return handleUseCaseError({ error: "Incorrect Email or Password", title: "SignIn" })
       }
 
-      if (exists && !externalProvider) {
-        const existPassword = await this.userRepository.getPasswordHash(exists.id!)
-
-        const matched = await this.verifyPassword(validate.data?.password!, existPassword ?? "");
-        if (!matched) {
-          return handleUseCaseError({ error: "Invalid Email Or Password", title: "SignIn" })
-        }
-      }
-      const tokenData = { firstName: exists?.firstName, lastName: exists?.lastName, id: exists?.id, profilePictureUrl: exists?.profilePictureUrl, email: exists?.email!, roles: exists?.roles! }
-      const tokens = this.generateTokens(tokenData);
-
-      const loggedIn = await this.userRepository.update(exists?.id!, {
-        tokenPair: {
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          provider: externalProvider
-        }
-      });
+      const loggedIn = await this.getUserTokens(exists)
       if (!loggedIn) {
-        return handleUseCaseError({ error: "Login Error", title: "SignIn" })
+        return handleUseCaseError({ error: "An unexpected error occurred", title: "SignIn" })
       }
       return ({
         data: loggedIn,
@@ -99,6 +85,73 @@ export default class AuthUseCase extends AutUseCaseRepository {
     } catch (error) {
       return handleUseCaseError({ title: "SignIn" })
     }
+  }
+
+  async socialSignIn(data: SocialSignInDTO): Promise<UseCaseResult<TUser>> {
+    try {
+      const validated = validateData<SocialSignInDTO>(data, SocialSignInSchema)
+      if (!validated.success) {
+        return handleUseCaseError({ error: validated.error, title: "Social Sign In", status: EStatusCodes.enum.badRequest })
+      }
+
+      let user = await this.userRepository.findByEmail(validated.data.email)
+
+      if (!user) {
+        const newUserData: CreateUserDTO = {
+          ...validated.data,
+          externalProvider: validated.data.oauth.provider,
+          profilePictureUrl: {
+            external: true,
+            url: validated.data.profilePictureUrl?.url,
+          }
+        }
+        const createNew = await this.createNewUser.execute(newUserData)
+        if (!createNew.success)
+          return handleUseCaseError({
+            title: "Signin",
+            error: `${validated.data.oauth.provider} Signin Failed`
+          })
+
+        user = createNew.data
+      }
+
+      const loggedIn = await this.getUserTokens(user)
+      if (!loggedIn) {
+        return handleUseCaseError({
+          title: "Signin",
+          error: `${validated.data.oauth.provider} Signin Failed`
+        })
+      }
+      return ({
+        data: loggedIn,
+        success: true
+      });
+    } catch (error) {
+      return handleUseCaseError({
+        title: "Signin",
+        error: `${data.oauth.provider} Signin Failed`
+      })
+    }
+  }
+
+  private async getUserTokens(user: TUser) {
+    const tokenData = {
+      firstName: user?.firstName,
+      lastName: user?.lastName,
+      id: user?.id,
+      profilePictureUrl: user?.profilePictureUrl,
+      email: user.email,
+      roles: user?.roles
+    }
+    const tokens = this.generateTokens(tokenData);
+
+    const loggedIn = await this.userRepository.update(user?.id!, {
+      tokenPair: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      }
+    });
+    return loggedIn
   }
   async signOut(userId: ID): Promise<void> {
     try {
