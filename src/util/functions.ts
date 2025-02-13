@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import z from "zod";
 import { logger } from "./logger";
 import { Role } from "../data/enum/user";
+import { EPermissionResource, EPermissionValue, TRole, TRolePermission } from "../data/entity/role";
 
 /**
  * Converts data to Array
@@ -23,7 +24,7 @@ export function toArray<TData>(data: unknown) {
  */
 export function validateData<T>(
   data: unknown,
-  zodSchema: z.ZodObject<any>|z.ZodEffects<any>
+  zodSchema: z.ZodObject<any> | z.ZodEffects<any>
 ): | { data: T, success: true } | { error: string, success: false } {
   const validation = zodSchema.safeParse(data);
 
@@ -57,7 +58,6 @@ export function validateBeforeSave(
   zodSchema: z.ZodObject<any> | z.ZodEffects<any>,
   name: string
 ) {
-  logger.info(`Validating ${name} Before Saving....`)
   mongooseSchema.pre("save", function (this: mongoose.Document, next) {
     const parsed = zodSchema.safeParse(this.toObject());
     if (!parsed.success) {
@@ -177,4 +177,35 @@ export function isVendor(role: unknown): boolean {
   return (Array.isArray(role)
     ? role.includes(Role.Vendor)
     : role === Role.Vendor) || isAdmin(role)
+}
+
+/**
+ * checks if user has required permissions to access a resource
+ * @param requiredPermission - permission to be checked
+ * @param user permission
+ * @returns boolean
+ */
+export function hasRequiredPermissions(
+  requiredPermission: TRolePermission,
+  permissions: TRolePermission[]
+): boolean {
+  if (permissions.includes("*")) {
+    return true;
+  }
+
+  if (permissions.includes(requiredPermission)) {
+    return true;
+  }
+
+  const [resource] = requiredPermission.split(":");
+  const resourceWildcard = `${resource}:*`;
+  if (permissions.includes(resourceWildcard)) {
+    return true;
+  }
+
+  return false;
+}
+
+export function getPermission(resource: z.infer<typeof EPermissionResource>, action: z.infer<typeof EPermissionValue>): string {
+  return `${resource}:${action}`
 }
