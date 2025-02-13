@@ -12,14 +12,6 @@ export class GetPaymentMethodUseCase implements BaseUseCase<GetPaymentMethodInpu
 
     async execute(input: GetPaymentMethodInput, context?: AuthContext): Promise<UseCaseResult<TPaymentMethod>> {
         try {
-            if (!context?.userId) {
-                return handleUseCaseError({
-                    error: "Unauthorized access: User authentication is required to retrieve payment method details.",
-                    title: "Get Payment Method",
-                    status: EStatusCodes.enum.forbidden,
-                });
-            }
-
             if (!input.paymentMethodId) {
                 return handleUseCaseError({
                     error: "Invalid request: A paymentMethodId must be provided.",
