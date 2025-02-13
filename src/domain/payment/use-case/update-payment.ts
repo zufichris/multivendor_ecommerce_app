@@ -1,6 +1,6 @@
 import { TPayment } from "../../../data/entity/payment";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { validateData } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions, validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { UpdatePaymentDTO, UpdatePaymentSchema } from "../../../data/dto/payment";
 import { IPaymentRepository } from "../repository";
@@ -13,7 +13,15 @@ export class UpdatePaymentUseCase implements BaseUseCase<UpdatePaymentDTO, TPaym
             if (!context.userId) {
                 return handleUseCaseError({ title: "Forbidden", error: "Forbidden", status: EStatusCodes.enum.forbidden });
             }
-
+            const REQUIRED_PERMISSION = getPermission("payment", "update");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to update payment.",
+                    title: "Update Payment - Authorization",
+                    status: EStatusCodes.enum.forbidden,
+                });
+            }
             const validate = validateData<UpdatePaymentDTO>(input, UpdatePaymentSchema);
             if (!validate.success) {
                 return handleUseCaseError({ error: validate.error, title: "Update Payment", status: EStatusCodes.enum.badRequest });
