@@ -2,7 +2,7 @@ import { TUser } from "../../../data/entity/user";
 import { BaseUseCase, UseCaseResult, handleUseCaseError, AuthContext } from "../../../global/use-case";
 import { IUserRepository } from "../repository";
 import { EStatusCodes } from "../../../global/enum";
-import { Role } from "../../../data/enum/user";
+import { getPermission, hasRequiredPermissions } from "../../../util/functions";
 
 export class GetUserUseCase implements BaseUseCase<{ userId?: string, email?: string, custId?: string }, TUser, AuthContext> {
     constructor(private readonly userRepository: IUserRepository) { }
@@ -17,13 +17,15 @@ export class GetUserUseCase implements BaseUseCase<{ userId?: string, email?: st
                 });
             }
 
-            if (context.userId !== input.userId && !context.roles.includes(Role.Admin)) {
-                return handleUseCaseError({
-                    error: "You are not authorized to access this user's information.",
-                    title: "Get User",
-                    status: EStatusCodes.enum.forbidden
-                });
-            }
+           const REQUIRED_PERMISSION = getPermission("user", "view_own");
+                       const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+                       if (!hasPermission) {
+                           return handleUseCaseError({
+                               error: "Forbidden: You do not have permission to create roles.",
+                               title: "Create Role - Authorization",
+                               status: EStatusCodes.enum.forbidden,
+                           });
+                       }
 
             let data: TUser | null = null;
 
