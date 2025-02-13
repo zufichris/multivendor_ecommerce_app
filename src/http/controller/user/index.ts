@@ -88,10 +88,7 @@ export class UserControllers {
   async queryUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const query = this.generateUserQuery(req.query)
-      const result = await this.userUseCase.query.execute(query, {
-        roles: req.user?.roles!,
-        userId: req.user?.id!
-      });
+      const result = await this.userUseCase.query.execute(query, req.user);
       if (!result.success) {
         const data: IResponseData<null> = {
           ...this.generateMetadata(req, result.error),
@@ -118,7 +115,7 @@ export class UserControllers {
   async getUser(req: Request, res: Response, next: NextFunction) {
     try {
       const custId = req.params.custId;
-      const result = await this.userUseCase.get.execute({ custId }, { roles: req.user?.roles!, userId: req.user?.id! });
+      const result = await this.userUseCase.get.execute({ custId }, req.user);
       if (!result.success) {
         const data: IResponseData<null> = {
           ...this.generateMetadata(req, "User not found"),
@@ -160,10 +157,7 @@ export class UserControllers {
         return;
       }
 
-      const result = await this.userUseCase.update.execute(validate.data, {
-        roles: req.user?.roles!,
-        userId: req.user?.id!
-      });
+      const result = await this.userUseCase.update.execute(validate.data, req.user!);
       if (!result.success) {
         const data: IResponseData<null> = {
           ...this.generateMetadata(req, "Failed to update user"),
@@ -193,10 +187,7 @@ export class UserControllers {
       const result = await this.userUseCase.changeStatus.execute({
         userId: toChangeId,
         isActive: true
-      }, {
-        roles: req.user?.roles!,
-        userId: req.user?.id!
-      });
+      }, req.user!);
       if (!result.success) {
         const data: IResponseData<null> = {
           ...this.generateMetadata(req, "Failed to change user status"),
@@ -228,10 +219,7 @@ export class UserControllers {
       const userId = req.params.userId;
       const role = req.body.role;
 
-      const result = await this.userUseCase.changeRole.execute({ userId, roles: role }, {
-        userId: req.user?.id!,
-        roles: req.user?.roles!
-      });
+      const result = await this.userUseCase.changeRole.execute({ userId, roles: role }, req.user!);
       if (!result.success) {
         const data: IResponseData<null> = {
           ...this.generateMetadata(req, "Failed to change user role"),
@@ -421,10 +409,7 @@ export class UserControllers {
         res.status(data.status).json(data);
         return;
       }
-      const result = await this.userUseCase.get.execute({ custId: custId.toString() }, {
-        roles: req.user?.roles!,
-        userId: req.user?.id!
-      });
+      const result = await this.userUseCase.get.execute({ custId: custId.toString() }, req.user);
       if (!result.success) {
         const data: IResponseData<null> = {
           ...this.generateMetadata(req, "Failed to retrieve user details"),
