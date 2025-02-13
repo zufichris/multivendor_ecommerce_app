@@ -1,18 +1,17 @@
 import express from "express";
 import { userControllers } from "../../controller/user";
-import { authMiddleWare } from "../../middleware/auth";
-import { Role } from "../../../data/enum/user";
+import { authMiddleware } from "../../middleware/auth";
 
 const router = express.Router();
-router.use(authMiddleWare.requireAuth)
+router.use(authMiddleware.requireAuth)
 router.route("/")
   .post(userControllers.createUser)
-  .get((req, res, next) => authMiddleWare.authorize([Role.Admin], req, res, next), userControllers.queryUsers);
+  .get(authMiddleware.requirePermission("user", "create"), userControllers.queryUsers);
 router.route("/:custId",)
-  .get(userControllers.getUser)
-  .patch(userControllers.updateUser)
+  .get(authMiddleware.requirePermission("user", "view_own"),userControllers.getUser)
+  .patch(userControllers.updateUser,authMiddleware.requirePermission("user", "update"))
 router.route("/address/:custId")
 router.route("/stats/:custId")
-  .get(userControllers.getUserStats)
+  .get(userControllers.getUserStats,authMiddleware.requirePermission("user", "view_own"))
 
 export default router;
