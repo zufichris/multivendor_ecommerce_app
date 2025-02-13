@@ -1,6 +1,6 @@
 import { TPayment } from "../../../data/entity/payment";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { validateData } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions, validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { CreatePaymentDTO, CreatePaymentSchema } from "../../../data/dto/payment";
 import { IPaymentRepository } from "../repository";
@@ -15,6 +15,15 @@ export class CreatePaymentUseCase implements BaseUseCase<CreatePaymentDTO, TPaym
                     title: "Forbidden",
                     error: "User authentication is required to create a payment.",
                     status: EStatusCodes.enum.forbidden
+                });
+            }
+            const REQUIRED_PERMISSION = getPermission("payment", "create")
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to create payment.",
+                    title: "Create Payment - Authorization",
+                    status: EStatusCodes.enum.forbidden,
                 });
             }
 
