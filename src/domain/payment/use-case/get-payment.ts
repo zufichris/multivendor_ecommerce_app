@@ -2,6 +2,7 @@ import { TPayment } from "../../../data/entity/payment";
 import { BaseUseCase, UseCaseResult, handleUseCaseError, AuthContext } from "../../../global/use-case";
 import { IPaymentRepository } from "../repository";
 import { EStatusCodes } from "../../../global/enum";
+import { getPermission, hasRequiredPermissions } from "../../../util/functions";
 
 export interface GetPaymentInput {
     paymentId: string;
@@ -16,6 +17,15 @@ export class GetPaymentUseCase implements BaseUseCase<GetPaymentInput, TPayment,
                 return handleUseCaseError({
                     error: "Unauthorized access: User authentication is required to retrieve payment information.",
                     title: "Get Payment",
+                    status: EStatusCodes.enum.forbidden,
+                });
+            }
+            const REQUIRED_PERMISSION = getPermission("payment", "view_own");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to create roles.",
+                    title: "Create Role - Authorization",
                     status: EStatusCodes.enum.forbidden,
                 });
             }
