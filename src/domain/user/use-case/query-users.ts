@@ -1,8 +1,8 @@
 import { TUser } from "../../../data/entity/user";
-import { Role } from "../../../data/enum/user";
 import { IQueryFilters, IQueryResult } from "../../../global/entity";
 import { EStatusCodes } from "../../../global/enum";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
+import { getPermission, hasRequiredPermissions } from "../../../util/functions";
 import { IUserRepository } from "../repository";
 
 export class QueryUsersUseCase implements BaseUseCase<IQueryFilters<TUser>, IQueryResult<TUser> & {
@@ -19,8 +19,17 @@ export class QueryUsersUseCase implements BaseUseCase<IQueryFilters<TUser>, IQue
       const page = input.page ?? 1
       input.limit = limit;
       input.page = page
-      if (!context?.userId || !(context?.roles.includes(Role.Admin))) {
+      if (!context?.userId) {
         return handleUseCaseError({ error: "Unauthorized", title: "Query Users", status: EStatusCodes.enum.forbidden })
+      }
+      const REQUIRED_PERMISSION = getPermission("user", "manage");
+      const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+      if (!hasPermission) {
+        return handleUseCaseError({
+          error: "Forbidden: You do not have permission to view users.",
+          title: "View Users - Authorization",
+          status: EStatusCodes.enum.forbidden,
+        });
       }
       const result = await this.userRepository.query(input)
       if (!result) {
