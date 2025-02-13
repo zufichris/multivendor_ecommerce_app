@@ -31,10 +31,7 @@ export class OrderControllers {
                 return;
             }
 
-            const result = await this.orderUseCase.create.execute(validate.data, {
-                roles: req.user?.roles!,
-                userId: req.user?.id!
-            });
+            const result = await this.orderUseCase.create.execute(validate.data, req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Order creation failed"),
@@ -61,7 +58,7 @@ export class OrderControllers {
     async getOrder(req: Request, res: Response, next: NextFunction) {
         try {
             const orderId = req.params.orderId;
-            const result = await this.orderUseCase.get.execute({ orderId }, { userId: req.user?.id!, roles: req.user?.roles! });
+            const result = await this.orderUseCase.get.execute({ orderId }, req.user);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Order not found"),
@@ -87,10 +84,7 @@ export class OrderControllers {
     async queryOrders(req: Request, res: Response, next: NextFunction) {
         try {
             const queryOptions = this.generateOrderQuery(req.query);
-            const result = await this.orderUseCase.query.execute(queryOptions, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!,
-            });
+            const result = await this.orderUseCase.query.execute(queryOptions, req.user);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Failed to query orders"),
@@ -127,10 +121,7 @@ export class OrderControllers {
                 return;
             }
 
-            const result = await this.orderUseCase.update.execute(validate.data, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!,
-            });
+            const result = await this.orderUseCase.update.execute(validate.data, req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Order update failed"),
@@ -155,10 +146,7 @@ export class OrderControllers {
     async cancelOrder(req: Request, res: Response, next: NextFunction) {
         try {
             const orderId = req.params.orderId;
-            const result = await this.orderUseCase.cancel.execute({ id: orderId, userId: req.body.userId, cancellationReason: req.body.reason }, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!,
-            });
+            const result = await this.orderUseCase.cancel.execute({ id: orderId, userId: req.body.userId, cancellationReason: req.body.reason }, req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Order cancellation failed"),
