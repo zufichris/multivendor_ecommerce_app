@@ -1,7 +1,6 @@
 import { TProduct } from "../../../data/entity/product";
 import { EStatusCodes } from "../../../global/enum";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { isVendor } from "../../../util/functions";
 import { IProductRepository } from "../repository";
 
 export class CreateProductUseCase implements BaseUseCase<Partial<TProduct>, TProduct, AuthContext> {
@@ -9,20 +8,13 @@ export class CreateProductUseCase implements BaseUseCase<Partial<TProduct>, TPro
 
     async execute(input: Partial<TProduct>, context?: AuthContext): Promise<UseCaseResult<TProduct>> {
         try {
-            if (!isVendor(context?.roles)) {
-                return handleUseCaseError({ 
-                    error: "Unauthorized: Only vendors can create products.", 
-                    title: "Create Product", 
-                    status: EStatusCodes.enum.forbidden 
-                });
-            }
 
             const newProduct = await this.productRepository.create(input);
             if (!newProduct) {
-                return handleUseCaseError({ 
-                    error: "Failed to create product in the database.", 
-                    title: "Create Product", 
-                    status: EStatusCodes.enum.internalServerError 
+                return handleUseCaseError({
+                    error: "Failed to create product in the database.",
+                    title: "Create Product",
+                    status: EStatusCodes.enum.internalServerError
                 });
             }
 
@@ -33,10 +25,10 @@ export class CreateProductUseCase implements BaseUseCase<Partial<TProduct>, TPro
         } catch (error: any) {
             // Log the error for debugging purposes.  Consider using a logging service.
             console.error("Error creating product:", error);
-            return handleUseCaseError({ 
-                title: "Create Product", 
-                error: "An unexpected error occurred while creating the product.", 
-                status: EStatusCodes.enum.internalServerError 
+            return handleUseCaseError({
+                title: "Create Product",
+                error: "An unexpected error occurred while creating the product.",
+                status: EStatusCodes.enum.internalServerError
             });
         }
     }

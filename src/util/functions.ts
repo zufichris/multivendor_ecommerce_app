@@ -157,27 +157,6 @@ export function getQueryMetaData({ page, filterCount, limit, totalCount }: {
   })
 }
 
-/**
- * Checks if the given role is Admin
- * @param role - Role to check
- * @returns boolean indicating if role is Admin
- */
-export function isAdmin(role: unknown): boolean {
-  return Array.isArray(role)
-    ? role.includes(Role.Admin)
-    : role === Role.Admin;
-}
-
-/**
- * Checks if the given role is Vendor
- * @param role - Role to check
- * @returns boolean indicating if role is Vendor
- */
-export function isVendor(role: unknown): boolean {
-  return (Array.isArray(role)
-    ? role.includes(Role.Vendor)
-    : role === Role.Vendor) || isAdmin(role)
-}
 
 /**
  * checks if user has required permissions to access a resource
