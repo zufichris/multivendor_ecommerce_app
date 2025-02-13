@@ -1,6 +1,6 @@
 import { TPaymentMethod } from "../../../data/entity/payment-method";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { validateData } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions, validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { CreatePaymentMethodDTO, CreatePaymentMethodSchema } from "../../../data/dto/payment-method";
 import { IPaymentMethodRepository } from "../repository";
@@ -15,6 +15,15 @@ export class CreatePaymentMethodUseCase implements BaseUseCase<CreatePaymentMeth
                     title: "Forbidden",
                     error: "Access denied. User not authenticated.",
                     status: EStatusCodes.enum.forbidden
+                });
+            }
+            const REQUIRED_PERMISSION = getPermission("payment-method", "create");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to create payment method.",
+                    title: "Create Payment method - Authorization",
+                    status: EStatusCodes.enum.forbidden,
                 });
             }
 
