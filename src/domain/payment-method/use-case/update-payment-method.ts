@@ -1,6 +1,6 @@
 import { TPaymentMethod } from "../../../data/entity/payment-method";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { validateData } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions, validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { UpdatePaymentMethodDTO, UpdatePaymentMethodSchema } from "../../../data/dto/payment-method";
 import { IPaymentMethodRepository } from "../repository";
@@ -14,6 +14,15 @@ export class UpdatePaymentMethodUseCase implements BaseUseCase<UpdatePaymentMeth
                 return handleUseCaseError({
                     title: "Forbidden",
                     error: "Forbidden",
+                    status: EStatusCodes.enum.forbidden,
+                });
+            }
+            const REQUIRED_PERMISSION = getPermission("payment-method", "update");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to update payment methods.",
+                    title: "Update payment method - Authorization",
                     status: EStatusCodes.enum.forbidden,
                 });
             }
