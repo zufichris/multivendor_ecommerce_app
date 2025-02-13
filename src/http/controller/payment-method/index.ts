@@ -31,10 +31,7 @@ export class PaymentMethodControllers {
                 return;
             }
 
-            const result = await this.paymentMethodUseCase.create.execute(validate.data, {
-                roles: req.user?.roles!,
-                userId: req.user?.id!
-            });
+            const result = await this.paymentMethodUseCase.create.execute(validate.data, req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Payment Method creation failed"),
@@ -61,10 +58,7 @@ export class PaymentMethodControllers {
     async getPaymentMethod(req: Request, res: Response, next: NextFunction) {
         try {
             const paymentMethodId = req.params.paymentMethodId;
-            const result = await this.paymentMethodUseCase.get.execute({ paymentMethodId }, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.paymentMethodUseCase.get.execute({ paymentMethodId }, req.user);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Payment Method not found"),
@@ -90,10 +84,7 @@ export class PaymentMethodControllers {
     async queryPaymentMethods(req: Request, res: Response, next: NextFunction) {
         try {
             const queryOptions = this.generatePaymentMethodQuery(req.query);
-            const result = await this.paymentMethodUseCase.query.execute(queryOptions, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.paymentMethodUseCase.query.execute(queryOptions, req.user);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Failed to query payment methods"),
@@ -130,10 +121,7 @@ export class PaymentMethodControllers {
                 return;
             }
 
-            const result = await this.paymentMethodUseCase.update.execute(validate.data, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.paymentMethodUseCase.update.execute(validate.data, req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Payment Method update failed"),
@@ -158,10 +146,7 @@ export class PaymentMethodControllers {
     async deletePaymentMethod(req: Request, res: Response, next: NextFunction) {
         try {
             const paymentMethodId = req.params.paymentMethodId;
-            const result = await this.paymentMethodUseCase.delete.execute(paymentMethodId, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.paymentMethodUseCase.delete.execute(paymentMethodId, req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Payment Method deletion failed"),
