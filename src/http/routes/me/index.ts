@@ -1,9 +1,8 @@
 import express from "express"
-import { authMiddleWare } from "../../middleware/auth"
+import { authMiddleware } from "../../middleware/auth"
 import { userControllers } from "../../controller/user"
 const router = express.Router()
-router.use(authMiddleWare.requireAuth,)
-router.use(authMiddleWare.requireAuth)
+router.use(authMiddleware.requireAuth, authMiddleware.requirePermission("user", "manage_own"))
 
 router.route('/')
     .get(userControllers.getMe)
