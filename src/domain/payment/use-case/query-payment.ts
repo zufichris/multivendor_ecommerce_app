@@ -2,16 +2,25 @@ import { TPayment } from "../../../data/entity/payment";
 import { IQueryFilters, IQueryResult } from "../../../global/entity";
 import { EStatusCodes } from "../../../global/enum";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { isAdmin } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions } from "../../../util/functions";
 import { IPaymentRepository } from "../repository";
 
 export class QueryPaymentUseCase implements BaseUseCase<IQueryFilters<TPayment>, IQueryResult<TPayment>, AuthContext> {
-    constructor(private readonly paymentRepository: IPaymentRepository) {}
+    constructor(private readonly paymentRepository: IPaymentRepository) { }
 
     async execute(options?: IQueryFilters<TPayment>, context?: AuthContext): Promise<UseCaseResult<IQueryResult<TPayment>>> {
         try {
-            if (!isAdmin(context?.roles)) {
+            if (!context?.userId) {
                 return handleUseCaseError({ title: "Forbidden", status: EStatusCodes.enum.forbidden });
+            }
+            const REQUIRED_PERMISSION = getPermission("payment", "view_own");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to view payments.",
+                    title: "View Payments - Authorization",
+                    status: EStatusCodes.enum.forbidden,
+                });
             }
             const result = await this.paymentRepository.query(options);
             if (!result) {
