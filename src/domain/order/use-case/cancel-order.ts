@@ -3,7 +3,7 @@ import { EStatusCodes } from "../../../global/enum";
 import { CancelOrderDTO, CancelOrderSchema } from "../../../data/dto/order";
 import { IOrderRepository } from "../repository";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { validateData } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions, validateData } from "../../../util/functions";
 
 export class CancelOrderUseCase implements BaseUseCase<CancelOrderDTO, TOrder, AuthContext> {
     constructor(private readonly orderRepository: IOrderRepository) { }
@@ -15,6 +15,16 @@ export class CancelOrderUseCase implements BaseUseCase<CancelOrderDTO, TOrder, A
                     title: "Authentication Required",
                     error: "User must be authenticated to cancel the order.",
                     status: EStatusCodes.enum.unauthorized,
+                });
+            }
+
+            const REQUIRED_PERMISSION = getPermission("order", "manage_own");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to create roles.",
+                    title: "Create Role - Authorization",
+                    status: EStatusCodes.enum.forbidden,
                 });
             }
 

@@ -1,17 +1,20 @@
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
 import { EStatusCodes } from "../../../global/enum";
 import { IOrderRepository } from "../repository";
+import { getPermission, hasRequiredPermissions } from "../../../util/functions";
 
 export class DeleteOrderUseCase implements BaseUseCase<string, boolean, AuthContext> {
     constructor(private readonly orderRepository: IOrderRepository) { }
 
     async execute(id: string, context: AuthContext): Promise<UseCaseResult<boolean>> {
         try {
-            if (!context.userId) {
+            const REQUIRED_PERMISSION = getPermission("order","manage_own")
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
                 return handleUseCaseError({
-                    title: "Authentication Required",
-                    error: "User not authenticated",
-                    status: EStatusCodes.enum.unauthorized
+                    error: "Forbidden: You do not have permission to delete orders.",
+                    title: "Delete Order - Authorization",
+                    status: EStatusCodes.enum.forbidden,
                 });
             }
 

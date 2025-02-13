@@ -1,6 +1,6 @@
 import { TOrder } from "../../../data/entity/order";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { validateData } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions, validateData } from "../../../util/functions";
 import { EStatusCodes } from "../../../global/enum";
 import { CreateOrderDTO, CreateOrderSchema } from "../../../data/dto/order";
 import { IOrderRepository } from "../repository";
@@ -15,6 +15,15 @@ export class CreateOrderUseCase implements BaseUseCase<CreateOrderDTO, TOrder, A
                     title: "Authentication Required",
                     error: "User not authenticated.",
                     status: EStatusCodes.enum.unauthorized
+                });
+            }
+            const REQUIRED_PERMISSION = getPermission("order", "create");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission to create order.",
+                    title: "Create order - Authorization",
+                    status: EStatusCodes.enum.forbidden,
                 });
             }
 

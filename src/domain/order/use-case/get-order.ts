@@ -2,7 +2,7 @@ import { TOrder } from "../../../data/entity/order";
 import { BaseUseCase, UseCaseResult, handleUseCaseError, AuthContext } from "../../../global/use-case";
 import { IOrderRepository } from "../repository";
 import { EStatusCodes } from "../../../global/enum";
-import { Role } from "../../../data/enum/user";
+import { getPermission, hasRequiredPermissions } from "../../../util/functions";
 
 export class GetOrderUseCase implements BaseUseCase<{ orderId: string; }, TOrder, AuthContext> {
     constructor(private readonly orderRepository: IOrderRepository) { }
@@ -16,6 +16,16 @@ export class GetOrderUseCase implements BaseUseCase<{ orderId: string; }, TOrder
                     status: EStatusCodes.enum.forbidden,
                 });
             }
+            const REQUIRED_PERMISSION = getPermission("order", "view_own");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+            if (!hasPermission) {
+                return handleUseCaseError({
+                    error: "Forbidden: You do not have permission view order.",
+                    title: "View order - Authorization",
+                    status: EStatusCodes.enum.forbidden,
+                });
+            }
+
 
             if (!input.orderId) {
                 return handleUseCaseError({
@@ -38,13 +48,6 @@ export class GetOrderUseCase implements BaseUseCase<{ orderId: string; }, TOrder
                 });
             }
 
-            if (order.userId !== context.userId && !context.roles.includes(Role.Admin)) {
-                return handleUseCaseError({
-                    error: "Unauthorized access to the order",
-                    title: "Get Order",
-                    status: EStatusCodes.enum.forbidden,
-                });
-            }
 
             return {
                 success: true,

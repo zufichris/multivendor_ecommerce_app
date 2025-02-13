@@ -2,7 +2,7 @@ import { TOrder } from "../../../data/entity/order";
 import { IQueryFilters, IQueryResult } from "../../../global/entity";
 import { EStatusCodes } from "../../../global/enum";
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
-import { isAdmin } from "../../../util/functions";
+import { getPermission, hasRequiredPermissions} from "../../../util/functions";
 import { IOrderRepository } from "../repository";
 
 export class QueryOrdersUseCase implements BaseUseCase<IQueryFilters<TOrder>, IQueryResult<TOrder>, AuthContext> {
@@ -10,11 +10,13 @@ export class QueryOrdersUseCase implements BaseUseCase<IQueryFilters<TOrder>, IQ
 
     async execute(options?: IQueryFilters<TOrder>, context?: AuthContext): Promise<UseCaseResult<IQueryResult<TOrder>>> {
         try {
-            if (!isAdmin(context?.roles)) {
+            const REQUIRED_PERMISSION = getPermission("order", "view_own");
+            const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context?.permissions ?? []);
+            if (!hasPermission) {
                 return handleUseCaseError({
-                    title: "Forbidden",
-                    error: "Insufficient permissions to query orders.",
-                    status: EStatusCodes.enum.forbidden
+                    error: "Forbidden: You do not have permission to view orders.",
+                    title: "view Orders- Authorization",
+                    status: EStatusCodes.enum.forbidden,
                 });
             }
 
