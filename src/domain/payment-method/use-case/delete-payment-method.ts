@@ -1,6 +1,7 @@
 import { AuthContext, BaseUseCase, handleUseCaseError, UseCaseResult } from "../../../global/use-case";
 import { EStatusCodes } from "../../../global/enum";
 import { IPaymentMethodRepository } from "../repository";
+import { getPermission, hasRequiredPermissions } from "../../../util/functions";
 
 export class DeletePaymentMethodUseCase implements BaseUseCase<string, boolean, AuthContext> {
     constructor(private readonly paymentMethodRepository: IPaymentMethodRepository) { }
@@ -10,6 +11,15 @@ export class DeletePaymentMethodUseCase implements BaseUseCase<string, boolean, 
             if (!context.userId) {
                 return handleUseCaseError({ title: "Forbidden", error: "Forbidden", status: EStatusCodes.enum.forbidden });
             }
+            const REQUIRED_PERMISSION = getPermission("payment-method", "delete");
+                        const hasPermission = hasRequiredPermissions(REQUIRED_PERMISSION, context.permissions);
+                        if (!hasPermission) {
+                            return handleUseCaseError({
+                                error: "Forbidden: You do not have permission to delete payment method.",
+                                title: "Delete Payment- Authorization",
+                                status: EStatusCodes.enum.forbidden,
+                            });
+                        }
 
             const paymentMethod = await this.paymentMethodRepository.findOne({
                 id
