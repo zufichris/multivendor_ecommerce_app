@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { shippingControllers } from '../../controller/shipping';
+import { authMiddleware } from '../../middleware/auth';
 
 const router = Router();
-
+router.use(authMiddleware.requireAuth,authMiddleware.requirePermission("shipping","manage_own"))
 router.route("/")
     .post(shippingControllers.createShipping)
     .get(shippingControllers.queryShippings);
