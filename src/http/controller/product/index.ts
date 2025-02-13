@@ -34,10 +34,7 @@ export class ProductControllers {
                 return;
             }
 
-            const result = await this.productUseCase.create.execute(validate.data, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.productUseCase.create.execute(validate.data,req.user);
 
             if (!result.success) {
                 const data = {
@@ -142,10 +139,7 @@ export class ProductControllers {
             const result = await this.productUseCase.update.execute({
                 data: req.body,
                 id: req.body.id
-            }, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            },req.user);
 
             if (!result.success) {
                 const data = {
@@ -201,7 +195,7 @@ export class ProductControllers {
     async deleteProduct(req: Request, res: Response, next: NextFunction) {
         try {
             const productId = req.params.productId;
-            const result = await this.productUseCase.delete.execute({ id: productId }, { userId: req?.user?.id!, roles: req?.user?.roles! });
+            const result = await this.productUseCase.delete.execute({ id: productId },req.user);
 
             if (!result.success) {
                 const data = {
