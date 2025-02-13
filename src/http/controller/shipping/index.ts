@@ -31,10 +31,7 @@ export class ShippingControllers {
                 return;
             }
 
-            const result = await this.shippingUseCase.create.execute(validate.data, {
-                roles: req.user?.roles!,
-                userId: req.user?.id!
-            });
+            const result = await this.shippingUseCase.create.execute(validate.data,req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Shipping creation failed"),
@@ -61,10 +58,7 @@ export class ShippingControllers {
     async getShipping(req: Request, res: Response, next: NextFunction) {
         try {
             const shippingId = req.params.shippingId;
-            const result = await this.shippingUseCase.get.execute({ shippingId }, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.shippingUseCase.get.execute({ shippingId },req.user);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Shipping not found"),
@@ -90,10 +84,7 @@ export class ShippingControllers {
     async queryShippings(req: Request, res: Response, next: NextFunction) {
         try {
             const queryOptions = this.generateShippingQuery(req.query);
-            const result = await this.shippingUseCase.query.execute(queryOptions, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.shippingUseCase.query.execute(queryOptions, req.user);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Failed to query shippings"),
@@ -130,10 +121,7 @@ export class ShippingControllers {
                 return;
             }
 
-            const result = await this.shippingUseCase.update.execute(validate.data, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.shippingUseCase.update.execute(validate.data,req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Shipping update failed"),
@@ -158,10 +146,7 @@ export class ShippingControllers {
     async deleteShipping(req: Request, res: Response, next: NextFunction) {
         try {
             const shippingId = req.params.shippingId;
-            const result = await this.shippingUseCase.delete.execute(shippingId, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.shippingUseCase.delete.execute(shippingId,req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, result.error ?? "Shipping cancellation failed"),
