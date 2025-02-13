@@ -34,10 +34,7 @@ export class VendorControllers {
                 return;
             }
 
-            const result = await this.vendorUseCase.create.execute(validate.data, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            const result = await this.vendorUseCase.create.execute(validate.data,req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, "Failed to create vendor"),
@@ -73,7 +70,7 @@ export class VendorControllers {
                 return;
             }
 
-            const result = await this.vendorUseCase.get.execute({ vendId: vendorId }, { roles: req.user?.roles!, userId: req.user?.id! });
+            const result = await this.vendorUseCase.get.execute({ vendId: vendorId },req.user);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, "Vendor not found"),
@@ -139,10 +136,7 @@ export class VendorControllers {
             const result = await this.vendorUseCase.updateProfile.execute({
                 data: req.body,
                 id: req.body.id
-            }, {
-                userId: req.user?.id!,
-                roles: req.user?.roles!
-            });
+            },req.user!);
             if (!result.success) {
                 const data = {
                     ...this.generateMetadata(req, "Failed to update vendor"),
@@ -197,7 +191,7 @@ export class VendorControllers {
     async deleteVendor(req: Request, res: Response, next: NextFunction) {
         try {
             const vendorId = req.params.vendorId;
-            const result = await this.vendorUseCase.delete.execute(vendorId, { userId: req?.user?.id!, roles: req?.user?.roles! })
+            const result = await this.vendorUseCase.delete.execute(vendorId, req.user!)
 
             if (!result.success) {
                 const data = {
