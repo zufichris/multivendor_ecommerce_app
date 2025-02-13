@@ -1,5 +1,5 @@
-import { Role } from "../../data/enum/user";
-import { ID } from "../entity";
+import { TRolePermission } from "../../data/entity/role";
+import { TUser } from "../../data/entity/user";
 import { EStatusCodes } from "../enum";
 export type UseCaseResult<T> = | {
   success: true;
@@ -22,9 +22,11 @@ export function handleUseCaseError({ title, error = "An unexpected Error Occurre
     success: false
   })
 }
-export type AuthContext = {
-  userId: ID,
-  roles: Role[]
+export interface AuthContext extends Partial<TUser> {
+  userId: string,
+  adminId?: string,
+  vendorId?: string;
+  permissions:TRolePermission[]
 }
 
 /**
